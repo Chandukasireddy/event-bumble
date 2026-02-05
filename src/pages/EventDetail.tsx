@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 import { ParticipantCard } from "@/components/ParticipantCard";
 import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
@@ -73,6 +74,7 @@ export default function EventDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const { toast } = useToast();
+  const { unreadCounts, markRequestSeen, markMessagesRead, refreshCounts } = useNotifications(eventId || "", currentUser?.id);
 
   // Load current user from localStorage
   useEffect(() => {
@@ -232,15 +234,20 @@ export default function EventDetail() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
-          <Tabs defaultValue="ai-match" className="space-y-6">
+        <Tabs defaultValue="ai-match" className="space-y-6">
             <TabsList className="bg-secondary/50">
               <TabsTrigger value="ai-match" className="data-[state=active]:bg-primary/20">
                 <Sparkles className="w-4 h-4 mr-2" />
                 AI Matching
               </TabsTrigger>
-              <TabsTrigger value="meetings" className="data-[state=active]:bg-primary/20">
+              <TabsTrigger value="meetings" className="data-[state=active]:bg-primary/20 relative">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Meeting Requests
+                {(unreadCounts.pendingRequests + unreadCounts.unreadMessages) > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {unreadCounts.pendingRequests + unreadCounts.unreadMessages}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
                 <Users className="w-4 h-4 mr-2" />
@@ -253,7 +260,13 @@ export default function EventDetail() {
             </TabsContent>
 
             <TabsContent value="meetings">
-              <MeetingRequestsList eventId={event.id} participants={participants} currentUserId={currentUser?.id} />
+              <MeetingRequestsList 
+                eventId={event.id} 
+                participants={participants} 
+                currentUserId={currentUser?.id}
+                onMarkRequestSeen={markRequestSeen}
+                onMarkMessagesRead={markMessagesRead}
+              />
             </TabsContent>
 
             <TabsContent value="participants">
