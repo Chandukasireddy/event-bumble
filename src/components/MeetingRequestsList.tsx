@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, MessageSquare, Sparkles, Send, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { MeetingBookingCard } from "./MeetingBookingCard";
 
 interface Participant {
   id: string;
@@ -24,6 +25,10 @@ interface MeetingRequest {
   is_ai_suggested: boolean;
   suggested_time: string | null;
   created_at: string;
+  meeting_date: string | null;
+  meeting_time: string | null;
+  meeting_location: string | null;
+  reschedule_message: string | null;
 }
 
 interface MeetingRequestsListProps {
@@ -84,8 +89,8 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
     if (receivedError) console.error("Error fetching received requests:", receivedError);
     if (sentError) console.error("Error fetching sent requests:", sentError);
 
-    setReceivedRequests(received || []);
-    setSentRequests(sent || []);
+    setReceivedRequests((received as MeetingRequest[]) || []);
+    setSentRequests((sent as MeetingRequest[]) || []);
     setIsLoading(false);
   };
 
@@ -108,17 +113,6 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
   };
 
   const getParticipant = (id: string) => participants.find((p) => p.id === id);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return "bg-accent/20 text-accent";
-      case "declined":
-        return "bg-destructive/20 text-destructive";
-      default:
-        return "bg-primary/20 text-primary";
-    }
-  };
 
   if (isLoading) {
     return (
@@ -159,60 +153,86 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
     );
   }
 
-  // Combine and categorize: accepted meetings first, then pending received, then pending sent
-  const acceptedRequests = allRequests.filter(r => r.status === "accepted");
+  // Categorize requests by status
+  const confirmedMeetings = allRequests.filter(r => r.status === "confirmed");
+  const scheduledMeetings = allRequests.filter(r => r.status === "scheduled" || r.status === "reschedule_requested");
+  const acceptedToSchedule = allRequests.filter(r => r.status === "accepted");
   const pendingReceived = receivedRequests.filter(r => r.status === "pending");
   const pendingSent = sentRequests.filter(r => r.status === "pending");
   const declinedRequests = allRequests.filter(r => r.status === "declined");
 
   return (
     <div className="space-y-6">
-      {/* Accepted Meetings */}
-      {acceptedRequests.length > 0 && (
+      {/* Confirmed Meetings */}
+      {confirmedMeetings.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-accent flex items-center gap-2">
             <Check className="w-4 h-4" />
-            Accepted to Meet ({acceptedRequests.length})
+            Confirmed Meetings ({confirmedMeetings.length})
           </h3>
-          {acceptedRequests.map((request) => {
+          {confirmedMeetings.map((request) => {
             const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
             const otherPerson = getParticipant(otherPersonId);
-
             if (!otherPerson) return null;
 
             return (
-              <Card key={request.id} className="bg-accent/10 border-accent/30">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-foreground text-base flex items-center gap-2">
-                      {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-accent" />}
-                      Meeting with {otherPerson.name}
-                    </CardTitle>
-                    <Badge className="bg-accent/20 text-accent">
-                      <Check className="w-3 h-3 mr-1" />
-                      Accepted
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {request.message && (
-                      <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
-                        "{request.message}"
-                      </p>
-                    )}
-                    {otherPerson.how_to_find_me && (
-                      <div className="flex items-start gap-2 bg-primary/10 p-3 rounded-lg">
-                        <MapPin className="w-4 h-4 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">How to find them:</p>
-                          <p className="text-sm text-foreground">{otherPerson.how_to_find_me}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <MeetingBookingCard
+                key={request.id}
+                request={request}
+                otherPerson={otherPerson}
+                currentUserId={currentUserId}
+                onUpdate={fetchRequests}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Scheduled / Awaiting Response */}
+      {scheduledMeetings.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-primary flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Scheduled - Awaiting Response ({scheduledMeetings.length})
+          </h3>
+          {scheduledMeetings.map((request) => {
+            const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
+            const otherPerson = getParticipant(otherPersonId);
+            if (!otherPerson) return null;
+
+            return (
+              <MeetingBookingCard
+                key={request.id}
+                request={request}
+                otherPerson={otherPerson}
+                currentUserId={currentUserId}
+                onUpdate={fetchRequests}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Accepted - Ready to Schedule */}
+      {acceptedToSchedule.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-accent flex items-center gap-2">
+            <Check className="w-4 h-4" />
+            Ready to Schedule ({acceptedToSchedule.length})
+          </h3>
+          {acceptedToSchedule.map((request) => {
+            const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
+            const otherPerson = getParticipant(otherPersonId);
+            if (!otherPerson) return null;
+
+            return (
+              <MeetingBookingCard
+                key={request.id}
+                request={request}
+                otherPerson={otherPerson}
+                currentUserId={currentUserId}
+                onUpdate={fetchRequests}
+              />
             );
           })}
         </div>
@@ -298,7 +318,7 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
                     </CardTitle>
                     <Badge className="bg-muted text-muted-foreground">
                       <Clock className="w-3 h-3 mr-1" />
-                      Waiting
+                      Pending
                     </Badge>
                   </div>
                 </CardHeader>
