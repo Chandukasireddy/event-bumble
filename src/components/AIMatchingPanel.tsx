@@ -71,6 +71,52 @@ interface AIMatchingPanelProps {
 export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchingPanelProps) {
   const storageKey = `ai-matches-${eventId}-${currentUser?.id || 'anon'}`;
   
+  // Track participants we already have requests with
+  const [existingRequestIds, setExistingRequestIds] = useState<Set<string>>(new Set());
+  
+  // Fetch existing meeting requests for current user
+  useEffect(() => {
+    const fetchExistingRequests = async () => {
+      if (!currentUser?.id) return;
+      
+      const { data } = await supabase
+        .from("meeting_requests")
+        .select("requester_id, target_id, status")
+        .eq("event_id", eventId)
+        .or(`requester_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`)
+        .in("status", ["pending", "accepted"]);
+      
+      if (data) {
+        const ids = new Set<string>();
+        data.forEach((req) => {
+          if (req.requester_id === currentUser.id) {
+            ids.add(req.target_id);
+          } else {
+            ids.add(req.requester_id);
+          }
+        });
+        setExistingRequestIds(ids);
+      }
+    };
+    
+    fetchExistingRequests();
+    
+    // Subscribe to meeting request changes
+    const channel = supabase
+      .channel(`ai-panel-requests-${eventId}-${currentUser?.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meeting_requests", filter: `event_id=eq.${eventId}` },
+        () => fetchExistingRequests()
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [eventId, currentUser?.id]);
+  
+  // Initialize state from localStorage
   // Initialize state from localStorage
   const [suggestions, setSuggestions] = useState<MatchSuggestion[]>(() => {
     try {
@@ -115,6 +161,20 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
   // Removed auto-generate - only generate on user click
 
   const generateMatches = async () => {
+    // Filter out participants we already have requests with
+    const availableParticipants = participants.filter(
+      p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)
+    );
+    
+    if (availableParticipants.length < 1) {
+      toast({
+        title: "No new matches available",
+        description: "You already have requests with all participants",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (participants.length < 2) {
       toast({
         title: "Not enough participants",
@@ -132,19 +192,24 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         ? participants.find(p => p.id === currentUser.id) || { ...currentUser, telegram_handle: "" }
         : null;
 
+      // Only send available participants to AI (exclude already requested)
+      const participantsForAI = currentUser 
+        ? [participants.find(p => p.id === currentUser.id), ...availableParticipants].filter(Boolean)
+        : participants;
+
       const { data, error } = await supabase.functions.invoke("ai-matching", {
         body: {
           eventId,
-          participants: participants.map((p) => ({
-            id: p.id,
-            name: p.name,
-            role: p.role,
-            interests: p.interests,
-            vibe: p.vibe,
-            superpower: p.superpower,
-            ideal_copilot: p.ideal_copilot,
-            offscreen_life: p.offscreen_life,
-            bio: p.bio,
+          participants: participantsForAI.map((p) => ({
+            id: p!.id,
+            name: p!.name,
+            role: p!.role,
+            interests: p!.interests,
+            vibe: p!.vibe,
+            superpower: p!.superpower,
+            ideal_copilot: p!.ideal_copilot,
+            offscreen_life: p!.offscreen_life,
+            bio: p!.bio,
           })),
           currentUserId: currentUser?.id,
         },
@@ -209,7 +274,10 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
   const generateFallbackMatches = (): MatchSuggestion[] => {
     if (!currentUser) return [];
     
-    const otherParticipants = participants.filter(p => p.id !== currentUser.id);
+    // Filter out participants we already have requests with
+    const otherParticipants = participants.filter(
+      p => p.id !== currentUser.id && !existingRequestIds.has(p.id)
+    );
     if (otherParticipants.length === 0) return [];
 
     const funReasons = [
@@ -331,18 +399,29 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
             )}
           </Button>
           <p className="text-xs text-muted-foreground mt-2 text-center">
-            {participants.length} participants available for matching
+            {currentUser 
+              ? `${participants.filter(p => p.id !== currentUser.id && !existingRequestIds.has(p.id)).length} people available to connect with`
+              : `${participants.length} participants available for matching`
+            }
           </p>
         </CardContent>
       </Card>
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
+      {/* Suggestions - filter out already requested */}
+      {suggestions.filter(s => {
+        if (!currentUser) return true;
+        const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+        return !existingRequestIds.has(otherPersonId);
+      }).length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-foreground">
             {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
           </h3>
-          {suggestions.map((suggestion, index) => {
+          {suggestions.filter(s => {
+            if (!currentUser) return true;
+            const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+            return !existingRequestIds.has(otherPersonId);
+          }).map((suggestion, index) => {
             const Icon1 = RoleIcon1(suggestion.participant1.role);
             const Icon2 = RoleIcon1(suggestion.participant2.role);
             const isYourMatch = currentUser && 
@@ -445,18 +524,29 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         </div>
       )}
 
-      {hasGenerated && suggestions.length === 0 && (
+      {hasGenerated && suggestions.filter(s => {
+        if (!currentUser) return true;
+        const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+        return !existingRequestIds.has(otherPersonId);
+      }).length === 0 && (
         <Card className="bg-card/50 border-border">
           <CardContent className="flex flex-col items-center justify-center py-8">
             <Sparkles className="w-8 h-8 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">All suggestions have been used or dismissed</p>
-            <Button
-              variant="link"
-              onClick={generateMatches}
-              className="text-primary mt-2"
-            >
-              Generate new matches
-            </Button>
+            <p className="text-muted-foreground">
+              {participants.filter(p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)).length === 0
+                ? "You've connected with everyone! 🎉"
+                : "All suggestions have been used or dismissed"
+              }
+            </p>
+            {participants.filter(p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)).length > 0 && (
+              <Button
+                variant="link"
+                onClick={generateMatches}
+                className="text-primary mt-2"
+              >
+                Generate new matches
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
