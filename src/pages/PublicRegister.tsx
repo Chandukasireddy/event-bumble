@@ -205,6 +205,15 @@ export default function PublicRegister() {
       }
 
       setRegistrationId(resultId);
+      
+      // Store current user info in localStorage for personalized matching
+      localStorage.setItem(`currentUser_${event.id}`, JSON.stringify({
+        id: resultId,
+        name,
+        role,
+        interests,
+      }));
+      
       toast({
         title: selectedExisting ? "Profile updated!" : "Registration successful!",
         description: "Redirecting to event dashboard...",

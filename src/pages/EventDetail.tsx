@@ -50,12 +50,34 @@ const ROLE_ICONS = {
   Business: Briefcase,
 };
 
+interface CurrentUser {
+  id: string;
+  name: string;
+  role: string;
+  interests: string[];
+}
+
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const { toast } = useToast();
+
+  // Load current user from localStorage
+  useEffect(() => {
+    if (eventId) {
+      const stored = localStorage.getItem(`currentUser_${eventId}`);
+      if (stored) {
+        try {
+          setCurrentUser(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse current user:", e);
+        }
+      }
+    }
+  }, [eventId]);
 
   useEffect(() => {
     if (eventId) {
@@ -218,7 +240,7 @@ export default function EventDetail() {
             </TabsList>
 
             <TabsContent value="ai-match">
-              <AIMatchingPanel eventId={event.id} participants={participants} />
+              <AIMatchingPanel eventId={event.id} participants={participants} currentUser={currentUser} />
             </TabsContent>
 
             <TabsContent value="meetings">

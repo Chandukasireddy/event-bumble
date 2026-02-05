@@ -25,9 +25,10 @@ serve(async (req) => {
   }
 
   try {
-    const { eventId, participants } = await req.json() as {
+    const { eventId, participants, currentUserId } = await req.json() as {
       eventId: string;
       participants: Participant[];
+      currentUserId?: string;
     };
 
     if (!participants || participants.length < 2) {
@@ -42,9 +43,14 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Find current user if provided
+    const currentUser = currentUserId 
+      ? participants.find(p => p.id === currentUserId)
+      : null;
+
     // Build participant summary for AI
     const participantSummary = participants
-      .map((p) => `- ${p.name} (${p.role}): Interests: ${p.interests.join(", ")}`)
+      .map((p) => `- ${p.name} (ID: ${p.id}, Role: ${p.role}): Interests: ${p.interests.join(", ")}`)
       .join("\n");
 
     const systemPrompt = `You are an AI networking assistant for hackathon events. Your job is to analyze participant profiles and suggest optimal matches for productive networking conversations.
@@ -55,25 +61,30 @@ Consider:
 3. Potential for interesting cross-disciplinary discussions
 4. Balance between similarity (shared interests) and diversity (different perspectives)
 
+${currentUser ? `IMPORTANT: The current user is ${currentUser.name} (ID: ${currentUser.id}). Prioritize finding matches FOR THIS USER specifically. At least 2-3 of your suggestions should include ${currentUser.name}.` : ''}
+
 Return matches as JSON with this exact structure:
 {
   "suggestions": [
     {
       "participant1_id": "id",
       "participant2_id": "id", 
-      "reason": "Brief explanation of why this is a good match",
+      "reason": "Brief, friendly explanation of why this is a good match. Be conversational and mention specific shared interests or complementary skills.",
       "compatibility_score": 0.85
     }
   ]
 }
 
-Generate 3-5 diverse match suggestions. compatibility_score should be 0.0-1.0.`;
+Generate 3-5 diverse match suggestions. compatibility_score should be 0.0-1.0. Make reasons personal and engaging!`;
 
     const userPrompt = `Here are the event participants:
 
 ${participantSummary}
 
-Generate match suggestions for optimal networking at this hackathon event.`;
+${currentUser 
+  ? `Please find great networking matches for ${currentUser.name} (${currentUser.role}) who is interested in: ${currentUser.interests.join(", ")}`
+  : 'Generate match suggestions for optimal networking at this hackathon event.'
+}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
