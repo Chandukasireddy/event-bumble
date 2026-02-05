@@ -69,10 +69,48 @@ interface AIMatchingPanelProps {
 }
 
 export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchingPanelProps) {
-  const [suggestions, setSuggestions] = useState<MatchSuggestion[]>([]);
+  const storageKey = `ai-matches-${eventId}-${currentUser?.id || 'anon'}`;
+  
+  // Initialize state from localStorage
+  const [suggestions, setSuggestions] = useState<MatchSuggestion[]>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Re-hydrate participant references
+        return parsed.map((s: any) => ({
+          ...s,
+          participant1: participants.find(p => p.id === s.participant1Id) || s.participant1,
+          participant2: participants.find(p => p.id === s.participant2Id) || s.participant2,
+        })).filter((s: MatchSuggestion) => s.participant1 && s.participant2);
+      }
+    } catch (e) {
+      console.error("Error loading stored matches:", e);
+    }
+    return [];
+  });
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) !== null;
+    } catch {
+      return false;
+    }
+  });
   const { toast } = useToast();
+
+  // Persist suggestions to localStorage whenever they change
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      const toStore = suggestions.map(s => ({
+        ...s,
+        participant1Id: s.participant1.id,
+        participant2Id: s.participant2.id,
+      }));
+      localStorage.setItem(storageKey, JSON.stringify(toStore));
+    }
+  }, [suggestions, storageKey]);
 
   // Removed auto-generate - only generate on user click
 
@@ -216,8 +254,12 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         description: `Sent to ${suggestion.participant1.name} and ${suggestion.participant2.name}`,
       });
 
-      // Remove from suggestions
-      setSuggestions(suggestions.filter((s) => s !== suggestion));
+      // Remove from suggestions and update storage
+      const newSuggestions = suggestions.filter((s) => s !== suggestion);
+      setSuggestions(newSuggestions);
+      if (newSuggestions.length === 0) {
+        localStorage.removeItem(storageKey);
+      }
     } catch (error) {
       toast({
         title: "Failed to create meeting",
@@ -378,7 +420,13 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                       variant="outline"
                       size="sm"
                       className="flex-1 border-muted-foreground/30"
-                      onClick={() => setSuggestions(suggestions.filter((s) => s !== suggestion))}
+                      onClick={() => {
+                        const newSuggestions = suggestions.filter((s) => s !== suggestion);
+                        setSuggestions(newSuggestions);
+                        if (newSuggestions.length === 0) {
+                          localStorage.removeItem(storageKey);
+                        }
+                      }}
                     >
                       Dismiss
                     </Button>
