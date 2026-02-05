@@ -54,7 +54,6 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -202,21 +201,29 @@ export default function EventDetail() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
-          <Tabs defaultValue="participants" className="space-y-6">
+          <Tabs defaultValue="ai-match" className="space-y-6">
             <TabsList className="bg-secondary/50">
-              <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
-                <Users className="w-4 h-4 mr-2" />
-                Participants ({participants.length})
+              <TabsTrigger value="ai-match" className="data-[state=active]:bg-primary/20">
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI Matching
               </TabsTrigger>
               <TabsTrigger value="meetings" className="data-[state=active]:bg-primary/20">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Meeting Requests
               </TabsTrigger>
-              <TabsTrigger value="ai-match" className="data-[state=active]:bg-primary/20">
-                <Sparkles className="w-4 h-4 mr-2" />
-                AI Matching
+              <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
+                <Users className="w-4 h-4 mr-2" />
+                Participants ({participants.length})
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="ai-match">
+              <AIMatchingPanel eventId={event.id} participants={participants} />
+            </TabsContent>
+
+            <TabsContent value="meetings">
+              <MeetingRequestsList eventId={event.id} participants={participants} />
+            </TabsContent>
 
             <TabsContent value="participants">
               {participants.length === 0 ? (
@@ -232,26 +239,17 @@ export default function EventDetail() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
                   {participants.map((participant) => (
                     <ParticipantCard
                       key={participant.id}
                       participant={participant}
                       eventId={event.id}
-                      onSelect={() => setSelectedParticipant(participant)}
-                      isSelected={selectedParticipant?.id === participant.id}
+                      compact
                     />
                   ))}
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="meetings">
-              <MeetingRequestsList eventId={event.id} participants={participants} />
-            </TabsContent>
-
-            <TabsContent value="ai-match">
-              <AIMatchingPanel eventId={event.id} participants={participants} />
             </TabsContent>
           </Tabs>
         </main>
