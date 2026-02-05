@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Zap,
@@ -17,6 +18,7 @@ import {
   Calendar,
   MapPin,
   Clock,
+  Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +75,7 @@ export default function EventDetail() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { unreadCounts, markRequestSeen, markMessagesRead, refreshCounts } = useNotifications(eventId || "", currentUser?.id);
 
@@ -283,16 +286,51 @@ export default function EventDetail() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                {participants.map((participant) => (
-                    <ParticipantCard
-                      key={participant.id}
-                      participant={participant}
-                      eventId={event.id}
-                      currentUserId={currentUser?.id}
-                      compact
+                <div className="space-y-4">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name, role, or interests..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-secondary/50 border-border"
                     />
-                  ))}
+                  </div>
+                  
+                  {/* Filtered Participants Grid */}
+                  {(() => {
+                    const filteredParticipants = participants.filter((p) => {
+                      const query = searchQuery.toLowerCase();
+                      return (
+                        p.name.toLowerCase().includes(query) ||
+                        p.role.toLowerCase().includes(query) ||
+                        p.interests.some((i) => i.toLowerCase().includes(query))
+                      );
+                    });
+                    
+                    if (filteredParticipants.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No participants found matching "{searchQuery}"
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+                        {filteredParticipants.map((participant) => (
+                          <ParticipantCard
+                            key={participant.id}
+                            participant={participant}
+                            eventId={event.id}
+                            currentUserId={currentUser?.id}
+                            compact
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </TabsContent>
