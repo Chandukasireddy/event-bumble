@@ -252,7 +252,7 @@ export default function EventDetail() {
             </TabsContent>
 
             <TabsContent value="meetings">
-              <MeetingRequestsList eventId={event.id} participants={participants} />
+              <MeetingRequestsList eventId={event.id} participants={participants} currentUserId={currentUser?.id} />
             </TabsContent>
 
             <TabsContent value="participants">
@@ -270,11 +270,12 @@ export default function EventDetail() {
                 </Card>
               ) : (
                 <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                  {participants.map((participant) => (
+                {participants.map((participant) => (
                     <ParticipantCard
                       key={participant.id}
                       participant={participant}
                       eventId={event.id}
+                      currentUserId={currentUser?.id}
                       compact
                     />
                   ))}
