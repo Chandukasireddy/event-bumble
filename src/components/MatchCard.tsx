@@ -1,7 +1,7 @@
  import { Card, CardContent, CardHeader } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
  import { Button } from "@/components/ui/button";
- import { Code, Palette, Briefcase, MessageCircle, Sparkles, RefreshCw } from "lucide-react";
+ import { Code, Palette, Briefcase, ExternalLink, Sparkles, RefreshCw } from "lucide-react";
  
  const ROLE_ICONS = {
    Dev: Code,
@@ -33,9 +33,9 @@
    const RoleIcon = ROLE_ICONS[matchRole as keyof typeof ROLE_ICONS] || Code;
    const roleColor = ROLE_COLORS[matchRole as keyof typeof ROLE_COLORS] || "text-primary";
  
-   const telegramUrl = telegramHandle.startsWith("@")
-     ? `https://t.me/${telegramHandle.slice(1)}`
-     : `https://t.me/${telegramHandle}`;
+  const linkedInUrl = telegramHandle.startsWith("http")
+    ? telegramHandle
+    : `https://linkedin.com/in/${telegramHandle}`;
  
    return (
      <div className="space-y-6">
@@ -82,14 +82,14 @@
  
              {/* Action buttons */}
              <div className="flex flex-col sm:flex-row gap-3">
-               <Button
-                 asChild
-                 className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground glow-green"
-               >
-                 <a href={telegramUrl} target="_blank" rel="noopener noreferrer">
-                   <MessageCircle className="w-4 h-4 mr-2" />
-                   Connect on Telegram
-                 </a>
+              <Button
+                asChild
+                className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground glow-green"
+              >
+                <a href={linkedInUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Connect on LinkedIn
+                </a>
                </Button>
                <Button
                  variant="outline"

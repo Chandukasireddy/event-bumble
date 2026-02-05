@@ -444,10 +444,10 @@ export default function PublicRegister() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="telegram" className="text-foreground/80">Telegram Handle *</Label>
+                    <Label htmlFor="linkedin" className="text-foreground/80">LinkedIn Profile URL *</Label>
                     <Input
-                      id="telegram"
-                      placeholder="@yourtelegram"
+                      id="linkedin"
+                      placeholder="https://linkedin.com/in/yourprofile"
                       value={telegramHandle}
                       onChange={(e) => setTelegramHandle(e.target.value)}
                       className="bg-secondary border-border focus:border-primary"
