@@ -8,8 +8,13 @@ const corsHeaders = {
 interface Participant {
   id: string;
   name: string;
-  role: string;
-  interests: string[];
+  role?: string;
+  interests?: string[];
+  vibe?: string;
+  superpower?: string;
+  ideal_copilot?: string;
+  offscreen_life?: string;
+  bio?: string;
 }
 
 interface MatchSuggestion {
@@ -18,6 +23,41 @@ interface MatchSuggestion {
   reason: string;
   compatibility_score: number;
 }
+
+const VIBE_LABELS: Record<string, string> = {
+  productivity: "Productivity & Automation",
+  creative: "Creative Arts",
+  health: "Health & Wellness",
+  social: "Social Impact",
+  knowledge: "Knowledge & Second Brains",
+  fintech: "FinTech & Money",
+  education: "Education & Jobs",
+  shopping: "Shopping & Retail",
+  infrastructure: "Infrastructure",
+  gaming: "Gaming & Entertainment",
+};
+
+const SUPERPOWER_LABELS: Record<string, string> = {
+  builds: "Builder (code & technical)",
+  shapes: "Shaper (design & UX)",
+  plans: "Planner (strategy & market fit)",
+  speaks: "Speaker (story & pitch)",
+};
+
+const COPILOT_LABELS: Record<string, string> = {
+  technical: "Technical Engine",
+  creative: "Creative Spark",
+  strategic: "Strategic Guide",
+  doer: "High-Speed Doer",
+  thinker: "Deep Thinker",
+};
+
+const OFFSCREEN_LABELS: Record<string, string> = {
+  outdoor: "Outdoor (hiking/cycling)",
+  city: "City explorer (galleries/music/food)",
+  home: "Home cook/host",
+  gaming: "Gamer/sports enthusiast",
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,42 +88,54 @@ serve(async (req) => {
       ? participants.find(p => p.id === currentUserId)
       : null;
 
-    // Build participant summary for AI
+    // Build participant summary for AI with new matching fields
     const participantSummary = participants
-      .map((p) => `- ${p.name} (ID: ${p.id}, Role: ${p.role}): Interests: ${p.interests.join(", ")}`)
-      .join("\n");
+      .map((p) => {
+        const parts = [`- ${p.name} (ID: ${p.id})`];
+        if (p.vibe) parts.push(`  Passion: ${VIBE_LABELS[p.vibe] || p.vibe}`);
+        if (p.superpower) parts.push(`  Superpower: ${SUPERPOWER_LABELS[p.superpower] || p.superpower}`);
+        if (p.ideal_copilot) parts.push(`  Looking for: ${COPILOT_LABELS[p.ideal_copilot] || p.ideal_copilot}`);
+        if (p.offscreen_life) parts.push(`  Off-screen: ${OFFSCREEN_LABELS[p.offscreen_life] || p.offscreen_life}`);
+        if (p.bio) parts.push(`  Bio: "${p.bio}"`);
+        return parts.join("\n");
+      })
+      .join("\n\n");
 
-    const systemPrompt = `You are an AI networking assistant for hackathon events. Your job is to analyze participant profiles and suggest optimal matches for productive networking conversations.
+    const systemPrompt = `You are a fun, enthusiastic AI matchmaker for networking events! Your job is to connect people based on their passions, skills, and what they're looking for.
 
-Consider:
-1. Complementary skills (e.g., Developer + Designer, Business + Technical)
-2. Shared interests that could lead to collaboration
-3. Potential for interesting cross-disciplinary discussions
-4. Balance between similarity (shared interests) and diversity (different perspectives)
+MATCHING CRITERIA (in order of importance):
+1. **Give-Get Match**: Match people whose "Superpower" (what they offer) aligns with what the other person is "Looking for" (their ideal co-pilot)
+2. **Shared Vibe**: People passionate about similar areas often click
+3. **Complementary Skills**: A Builder + Designer, or a Planner + Doer can create magic
+4. **Lifestyle Match**: Similar off-screen interests = easy conversation starters
 
-${currentUser ? `IMPORTANT: The current user is ${currentUser.name} (ID: ${currentUser.id}). Prioritize finding matches FOR THIS USER specifically. At least 2-3 of your suggestions should include ${currentUser.name}.` : ''}
+${currentUser ? `🎯 FOCUS ON: ${currentUser.name} (ID: ${currentUser.id}). Generate matches specifically FOR this person. At least 2-3 suggestions MUST include them.` : ''}
 
-Return matches as JSON with this exact structure:
+Return JSON with this structure:
 {
   "suggestions": [
     {
       "participant1_id": "id",
-      "participant2_id": "id", 
-      "reason": "Brief, friendly explanation of why this is a good match. Be conversational and mention specific shared interests or complementary skills.",
+      "participant2_id": "id",
+      "reason": "Make this fun, conversational, and specific! E.g., 'You both geek out about FinTech, and Sarah's design magic could bring your backend skills to life! 🚀'",
       "compatibility_score": 0.85
     }
   ]
 }
 
-Generate 3-5 diverse match suggestions. compatibility_score should be 0.0-1.0. Make reasons personal and engaging!`;
+Generate 3-5 matches. Use emojis. Be enthusiastic! Make people excited to meet each other.`;
 
-    const userPrompt = `Here are the event participants:
+    const userPrompt = `Here are the participants:
 
 ${participantSummary}
 
 ${currentUser 
-  ? `Please find great networking matches for ${currentUser.name} (${currentUser.role}) who is interested in: ${currentUser.interests.join(", ")}`
-  : 'Generate match suggestions for optimal networking at this hackathon event.'
+  ? `Find the BEST matches for ${currentUser.name}!
+Their vibe: ${VIBE_LABELS[currentUser.vibe || ''] || 'Not specified'}
+Their superpower: ${SUPERPOWER_LABELS[currentUser.superpower || ''] || 'Not specified'}
+They're looking for: ${COPILOT_LABELS[currentUser.ideal_copilot || ''] || 'Not specified'}
+${currentUser.bio ? `About them: "${currentUser.bio}"` : ''}`
+  : 'Generate the best networking matches for this event!'
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

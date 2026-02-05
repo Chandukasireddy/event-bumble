@@ -155,34 +155,49 @@ export type Database = {
       }
       registrations: {
         Row: {
+          bio: string | null
           created_at: string
           event_id: string | null
           id: string
+          ideal_copilot: string | null
           interests: string[]
           match_id: string | null
           name: string
+          offscreen_life: string | null
           role: string
-          telegram_handle: string
+          superpower: string | null
+          telegram_handle: string | null
+          vibe: string | null
         }
         Insert: {
+          bio?: string | null
           created_at?: string
           event_id?: string | null
           id?: string
+          ideal_copilot?: string | null
           interests?: string[]
           match_id?: string | null
           name: string
+          offscreen_life?: string | null
           role: string
-          telegram_handle: string
+          superpower?: string | null
+          telegram_handle?: string | null
+          vibe?: string | null
         }
         Update: {
+          bio?: string | null
           created_at?: string
           event_id?: string | null
           id?: string
+          ideal_copilot?: string | null
           interests?: string[]
           match_id?: string | null
           name?: string
+          offscreen_life?: string | null
           role?: string
-          telegram_handle?: string
+          superpower?: string | null
+          telegram_handle?: string | null
+          vibe?: string | null
         }
         Relationships: [
           {
