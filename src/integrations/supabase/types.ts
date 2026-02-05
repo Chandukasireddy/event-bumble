@@ -98,12 +98,8 @@ export type Database = {
           event_id: string
           id: string
           is_ai_suggested: boolean | null
-          meeting_date: string | null
-          meeting_location: string | null
-          meeting_time: string | null
           message: string | null
           requester_id: string
-          reschedule_message: string | null
           status: string
           suggested_time: string | null
           target_id: string
@@ -114,12 +110,8 @@ export type Database = {
           event_id: string
           id?: string
           is_ai_suggested?: boolean | null
-          meeting_date?: string | null
-          meeting_location?: string | null
-          meeting_time?: string | null
           message?: string | null
           requester_id: string
-          reschedule_message?: string | null
           status?: string
           suggested_time?: string | null
           target_id: string
@@ -130,12 +122,8 @@ export type Database = {
           event_id?: string
           id?: string
           is_ai_suggested?: boolean | null
-          meeting_date?: string | null
-          meeting_location?: string | null
-          meeting_time?: string | null
           message?: string | null
           requester_id?: string
-          reschedule_message?: string | null
           status?: string
           suggested_time?: string | null
           target_id?: string
