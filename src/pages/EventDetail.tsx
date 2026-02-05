@@ -42,6 +42,11 @@ interface Participant {
   interests: string[];
   telegram_handle: string;
   created_at: string;
+  vibe?: string;
+  superpower?: string;
+  ideal_copilot?: string;
+  offscreen_life?: string;
+  bio?: string;
 }
 
 const ROLE_ICONS = {
@@ -53,8 +58,11 @@ const ROLE_ICONS = {
 interface CurrentUser {
   id: string;
   name: string;
-  role: string;
-  interests: string[];
+  vibe?: string;
+  superpower?: string;
+  idealCopilot?: string;
+  offscreenLife?: string;
+  bio?: string;
 }
 
 export default function EventDetail() {

@@ -1,31 +1,49 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Zap, Code, Palette, Briefcase, X, Send, Calendar, MapPin, CheckCircle2, User } from "lucide-react";
+import { Zap, Calendar, MapPin, CheckCircle2, User, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-const INTEREST_SUGGESTIONS = [
-  "AI/ML", "Web3", "Mobile", "Backend", "Frontend", "DevOps",
-  "UI/UX", "Data Science", "Blockchain", "IoT", "AR/VR", "Gaming"
+const VIBE_OPTIONS = [
+  { value: "productivity", label: "⚡ Productivity & Automation" },
+  { value: "creative", label: "🎨 Creative Arts (Media/Music)" },
+  { value: "health", label: "🏥 Health & Wellness" },
+  { value: "social", label: "🌍 Social Impact" },
+  { value: "knowledge", label: "🧠 Knowledge & \"Second Brains\"" },
+  { value: "fintech", label: "💰 FinTech & Money" },
+  { value: "education", label: "💼 Education & Jobs" },
+  { value: "shopping", label: "🛒 Shopping & Retail" },
+  { value: "infrastructure", label: "🛠️ Infrastructure (The \"Pipes\")" },
+  { value: "gaming", label: "🎮 Gaming & Entertainment" },
 ];
 
-const ROLE_ICONS = {
-  Dev: Code,
-  Designer: Palette,
-  Business: Briefcase,
-};
+const SUPERPOWER_OPTIONS = [
+  { value: "builds", label: "💻 Builds", desc: "I handle the code and technical logic." },
+  { value: "shapes", label: "🎨 Shapes", desc: "I handle the design, UX, and \"feel.\"" },
+  { value: "plans", label: "📈 Plans", desc: "I handle the strategy and market fit." },
+  { value: "speaks", label: "🗣️ Speaks", desc: "I handle the story and the pitch." },
+];
+
+const COPILOT_OPTIONS = [
+  { value: "technical", label: "🛠️ Technical Engine", desc: "Someone to build the \"guts\" and solve the logic." },
+  { value: "creative", label: "🌈 Creative Spark", desc: "Someone to make it beautiful and human-centric." },
+  { value: "strategic", label: "🗺️ Strategic Guide", desc: "Someone to find the problem and the \"why.\"" },
+  { value: "doer", label: "🚀 High-Speed Doer", desc: "Someone to ship fast and keep the energy high." },
+  { value: "thinker", label: "🧐 Deep Thinker", desc: "Someone to challenge the ideas and ensure quality." },
+];
+
+const OFFSCREEN_OPTIONS = [
+  { value: "outdoor", label: "🏔️ In the wild", desc: "Hiking/Cycling/Climbing" },
+  { value: "city", label: "🖼️ In the city", desc: "Galleries/Music/Food" },
+  { value: "home", label: "🍳 In the kitchen", desc: "Cooking/Hosting" },
+  { value: "gaming", label: "🕹️ In the game", desc: "Sports/Gaming/Chess" },
+];
 
 interface Event {
   id: string;
@@ -38,9 +56,31 @@ interface Event {
 interface ExistingRegistration {
   id: string;
   name: string;
-  role: string;
-  interests: string[];
-  telegram_handle: string;
+}
+
+interface SelectButtonProps {
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+  desc?: string;
+}
+
+function SelectButton({ selected, onClick, label, desc }: SelectButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full text-left p-3 rounded-lg border transition-all duration-200",
+        selected
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-border bg-secondary/50 hover:border-primary/50"
+      )}
+    >
+      <span className="font-medium text-sm">{label}</span>
+      {desc && <p className="text-xs text-muted-foreground mt-1">{desc}</p>}
+    </button>
+  );
 }
 
 export default function PublicRegister() {
@@ -49,8 +89,6 @@ export default function PublicRegister() {
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [registrationId, setRegistrationId] = useState<string | null>(null);
   
   // Existing registrations for autocomplete
   const [existingRegistrations, setExistingRegistrations] = useState<ExistingRegistration[]>([]);
@@ -59,11 +97,14 @@ export default function PublicRegister() {
   const [selectedExisting, setSelectedExisting] = useState<ExistingRegistration | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Form fields
   const [name, setName] = useState("");
-  const [role, setRole] = useState<string>("");
-  const [interests, setInterests] = useState<string[]>([]);
-  const [telegramHandle, setTelegramHandle] = useState("");
-  const [customInterest, setCustomInterest] = useState("");
+  const [vibe, setVibe] = useState("");
+  const [superpower, setSuperpower] = useState("");
+  const [idealCopilot, setIdealCopilot] = useState("");
+  const [offscreenLife, setOffscreenLife] = useState("");
+  const [bio, setBio] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
 
   const { toast } = useToast();
 
@@ -102,7 +143,7 @@ export default function PublicRegister() {
     // Fetch existing registrations for this event (for autocomplete)
     const { data: registrations } = await supabase
       .from("registrations")
-      .select("id, name, role, interests, telegram_handle")
+      .select("id, name")
       .eq("event_id", data.id);
     
     if (registrations) {
@@ -132,9 +173,6 @@ export default function PublicRegister() {
   const selectExistingRegistration = (reg: ExistingRegistration) => {
     setSelectedExisting(reg);
     setName(reg.name);
-    setRole(reg.role);
-    setInterests(reg.interests);
-    setTelegramHandle(reg.telegram_handle === "@placeholder" ? "" : reg.telegram_handle);
     setShowSuggestions(false);
     
     toast({
@@ -143,23 +181,12 @@ export default function PublicRegister() {
     });
   };
 
-  const addInterest = (interest: string) => {
-    if (interest && !interests.includes(interest) && interests.length < 5) {
-      setInterests([...interests, interest]);
-      setCustomInterest("");
-    }
-  };
-
-  const removeInterest = (interest: string) => {
-    setInterests(interests.filter((i) => i !== interest));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!event) return;
 
-    if (!name || !role || interests.length === 0 || !telegramHandle) {
+    if (!name || !vibe || !superpower || !idealCopilot) {
       toast({
         title: "Missing fields",
         description: "Please fill in all required fields",
@@ -173,15 +200,24 @@ export default function PublicRegister() {
     try {
       let resultId: string;
       
+      const registrationData = {
+        name,
+        role: superpower,
+        interests: [vibe, idealCopilot, offscreenLife].filter(Boolean),
+        telegram_handle: linkedinUrl || "",
+        vibe,
+        superpower,
+        ideal_copilot: idealCopilot,
+        offscreen_life: offscreenLife,
+        bio,
+        event_id: event.id,
+      };
+
       if (selectedExisting) {
         // Update existing registration
         const { error } = await supabase
           .from("registrations")
-          .update({
-            role,
-            interests,
-            telegram_handle: telegramHandle,
-          })
+          .update(registrationData)
           .eq("id", selectedExisting.id);
 
         if (error) throw error;
@@ -190,13 +226,7 @@ export default function PublicRegister() {
         // Create new registration
         const { data, error } = await supabase
           .from("registrations")
-          .insert({
-            name,
-            role,
-            interests,
-            telegram_handle: telegramHandle,
-            event_id: event.id,
-          })
+          .insert(registrationData)
           .select()
           .single();
 
@@ -204,14 +234,15 @@ export default function PublicRegister() {
         resultId = data.id;
       }
 
-      setRegistrationId(resultId);
-      
       // Store current user info in localStorage for personalized matching
       localStorage.setItem(`currentUser_${event.id}`, JSON.stringify({
         id: resultId,
         name,
-        role,
-        interests,
+        vibe,
+        superpower,
+        idealCopilot,
+        offscreenLife,
+        bio,
       }));
       
       toast({
@@ -233,8 +264,6 @@ export default function PublicRegister() {
     }
   };
 
-  const RoleIcon = role ? ROLE_ICONS[role as keyof typeof ROLE_ICONS] : null;
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -249,36 +278,6 @@ export default function PublicRegister() {
         <Zap className="w-12 h-12 text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold text-foreground mb-2">Event not found</h2>
         <p className="text-muted-foreground">This registration link may be invalid or expired</p>
-      </div>
-    );
-  }
-
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-card/50 border-border">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center mb-4 glow-green">
-                <CheckCircle2 className="w-8 h-8 text-accent" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">You're In!</h2>
-              <p className="text-muted-foreground text-center mb-6">
-                Your profile is now visible to other participants at {event.name}
-              </p>
-              <Button asChild className="bg-primary hover:bg-primary/90">
-                <Link to={`/profile/${registrationId}`}>
-                  View & Edit Profile
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     );
   }
@@ -321,14 +320,14 @@ export default function PublicRegister() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 container mx-auto px-4 py-8 flex flex-col items-center justify-center">
-          <div className="w-full max-w-md space-y-6">
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-lg mx-auto space-y-6">
             <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-bold text-gradient">
-                Join the Network
+                Find Your Match
               </h2>
               <p className="text-muted-foreground">
-                {event.description || "Register to connect with other participants"}
+                {event.description || "Answer a few questions to connect with the right people"}
               </p>
             </div>
 
@@ -340,7 +339,7 @@ export default function PublicRegister() {
                     <Label htmlFor="name" className="text-foreground/80">Name *</Label>
                     <Input
                       id="name"
-                      placeholder="Start typing your name..."
+                      placeholder="Your name"
                       value={name}
                       onChange={(e) => handleNameChange(e.target.value)}
                       onFocus={() => name.length >= 3 && nameSuggestions.length > 0 && setShowSuggestions(true)}
@@ -368,7 +367,7 @@ export default function PublicRegister() {
                             <div>
                               <p className="font-medium text-foreground">{reg.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                Click to complete your registration
+                                Click to update your registration
                               </p>
                             </div>
                           </button>
@@ -377,91 +376,95 @@ export default function PublicRegister() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="role" className="text-foreground/80">Role *</Label>
-                    <Select value={role} onValueChange={setRole}>
-                      <SelectTrigger className="bg-secondary border-border focus:border-primary">
-                        <SelectValue placeholder="Select your role">
-                          {role && RoleIcon && (
-                            <span className="flex items-center gap-2">
-                              <RoleIcon className="h-4 w-4 text-primary" />
-                              {role}
-                            </span>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-border">
-                        {Object.entries(ROLE_ICONS).map(([roleName, Icon]) => (
-                          <SelectItem key={roleName} value={roleName}>
-                            <span className="flex items-center gap-2">
-                              <Icon className="h-4 w-4 text-primary" />
-                              {roleName}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-foreground/80">Interests (select up to 5) *</Label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {interests.map((interest) => (
-                        <Badge
-                          key={interest}
-                          variant="secondary"
-                          className="bg-primary/20 text-primary border border-primary/30 cursor-pointer hover:bg-primary/30"
-                          onClick={() => removeInterest(interest)}
-                        >
-                          {interest}
-                          <X className="h-3 w-3 ml-1" />
-                        </Badge>
+                  {/* My Vibe */}
+                  <div className="space-y-3">
+                    <Label className="text-foreground/80">My Vibe - Which area excites you most? *</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {VIBE_OPTIONS.map((option) => (
+                        <SelectButton
+                          key={option.value}
+                          selected={vibe === option.value}
+                          onClick={() => setVibe(option.value)}
+                          label={option.label}
+                        />
                       ))}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {INTEREST_SUGGESTIONS.filter((i) => !interests.includes(i)).map((interest) => (
-                        <Badge
-                          key={interest}
-                          variant="outline"
-                          className="cursor-pointer border-muted-foreground/30 hover:border-accent hover:text-accent"
-                          onClick={() => addInterest(interest)}
-                        >
-                          {interest}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <Input
-                        placeholder="Add custom interest"
-                        value={customInterest}
-                        onChange={(e) => setCustomInterest(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addInterest(customInterest);
-                          }
-                        }}
-                        className="bg-secondary border-border"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => addInterest(customInterest)}
-                        disabled={!customInterest || interests.length >= 5}
-                        className="border-muted-foreground/30"
-                      >
-                        Add
-                      </Button>
                     </div>
                   </div>
 
+                  {/* My Superpower */}
+                  <div className="space-y-3">
+                    <Label className="text-foreground/80">My Superpower (The "Give") *</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">I'm the one who...</p>
+                    <div className="grid gap-2">
+                      {SUPERPOWER_OPTIONS.map((option) => (
+                        <SelectButton
+                          key={option.value}
+                          selected={superpower === option.value}
+                          onClick={() => setSuperpower(option.value)}
+                          label={option.label}
+                          desc={option.desc}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* My Ideal Co-Pilot */}
+                  <div className="space-y-3">
+                    <Label className="text-foreground/80">My Ideal Co-Pilot (The "Get") *</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">I'm looking for a...</p>
+                    <div className="grid gap-2">
+                      {COPILOT_OPTIONS.map((option) => (
+                        <SelectButton
+                          key={option.value}
+                          selected={idealCopilot === option.value}
+                          onClick={() => setIdealCopilot(option.value)}
+                          label={option.label}
+                          desc={option.desc}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* My Off-Screen Life */}
+                  <div className="space-y-3">
+                    <Label className="text-foreground/80">My Off-Screen Life</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">Find me...</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {OFFSCREEN_OPTIONS.map((option) => (
+                        <SelectButton
+                          key={option.value}
+                          selected={offscreenLife === option.value}
+                          onClick={() => setOffscreenLife(option.value)}
+                          label={option.label}
+                          desc={option.desc}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bio */}
                   <div className="space-y-2">
-                    <Label htmlFor="linkedin" className="text-foreground/80">LinkedIn Profile URL *</Label>
+                    <Label htmlFor="bio" className="text-foreground/80">About You</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">Short intro to find your match</p>
+                    <Textarea
+                      id="bio"
+                      placeholder="Tell us a bit about yourself, what you're working on, or what you're looking for..."
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      className="bg-secondary border-border focus:border-primary min-h-[80px]"
+                      maxLength={300}
+                    />
+                    <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
+                  </div>
+
+                  {/* LinkedIn (Optional) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedin" className="text-foreground/80">LinkedIn Profile URL (Optional)</Label>
                     <Input
                       id="linkedin"
                       placeholder="https://linkedin.com/in/yourprofile"
-                      value={telegramHandle}
-                      onChange={(e) => setTelegramHandle(e.target.value)}
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
                       className="bg-secondary border-border focus:border-primary"
                     />
                   </div>
@@ -469,14 +472,14 @@ export default function PublicRegister() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-primary hover:bg-primary/90 glow-purple"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-purple transition-all duration-300"
                   >
                     {isSubmitting ? (
-                      "Saving..."
+                      "Registering..."
                     ) : (
                       <>
                         <Send className="h-4 w-4 mr-2" />
-                        {selectedExisting ? "Update Registration" : "Register"}
+                        Find My Match
                       </>
                     )}
                   </Button>

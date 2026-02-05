@@ -12,19 +12,47 @@ const ROLE_ICONS = {
   Business: Briefcase,
 };
 
+const SUPERPOWER_LABELS: Record<string, string> = {
+  builds: "💻 Builder",
+  shapes: "🎨 Shaper",
+  plans: "📈 Planner",
+  speaks: "🗣️ Speaker",
+};
+
+const VIBE_LABELS: Record<string, string> = {
+  productivity: "⚡ Productivity",
+  creative: "🎨 Creative Arts",
+  health: "🏥 Health",
+  social: "🌍 Social Impact",
+  knowledge: "🧠 Knowledge",
+  fintech: "💰 FinTech",
+  education: "💼 Education",
+  shopping: "🛒 Shopping",
+  infrastructure: "🛠️ Infrastructure",
+  gaming: "🎮 Gaming",
+};
+
 interface Participant {
   id: string;
   name: string;
   role: string;
   interests: string[];
   telegram_handle: string;
+  vibe?: string;
+  superpower?: string;
+  ideal_copilot?: string;
+  offscreen_life?: string;
+  bio?: string;
 }
 
 interface CurrentUser {
   id: string;
   name: string;
-  role: string;
-  interests: string[];
+  vibe?: string;
+  superpower?: string;
+  idealCopilot?: string;
+  offscreenLife?: string;
+  bio?: string;
 }
 
 interface MatchSuggestion {
@@ -79,6 +107,11 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
             name: p.name,
             role: p.role,
             interests: p.interests,
+            vibe: p.vibe,
+            superpower: p.superpower,
+            ideal_copilot: p.ideal_copilot,
+            offscreen_life: p.offscreen_life,
+            bio: p.bio,
           })),
           currentUserId: currentUser?.id,
         },
@@ -293,24 +326,25 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                         </div>
                         <div>
                           <span className="font-semibold text-foreground text-lg">{otherPerson.name}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {otherPerson.role}
-                            </Badge>
-                            <Badge className="bg-accent/20 text-accent text-xs">
-                              {Math.round(suggestion.compatibility_score * 100)}% match
-                            </Badge>
-                          </div>
+                          <Badge className="bg-accent/20 text-accent text-xs">
+                            {Math.round(suggestion.compatibility_score * 100)}% match
+                          </Badge>
                         </div>
                       </div>
-                      {otherPerson.interests.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {otherPerson.interests.slice(0, 3).map(interest => (
-                            <Badge key={interest} variant="secondary" className="text-xs bg-secondary/50">
-                              {interest}
-                            </Badge>
-                          ))}
-                        </div>
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {otherPerson.superpower && (
+                          <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                            {SUPERPOWER_LABELS[otherPerson.superpower] || otherPerson.superpower}
+                          </Badge>
+                        )}
+                        {otherPerson.vibe && (
+                          <Badge variant="secondary" className="text-xs bg-secondary/50">
+                            {VIBE_LABELS[otherPerson.vibe] || otherPerson.vibe}
+                          </Badge>
+                        )}
+                      </div>
+                      {otherPerson.bio && (
+                        <p className="text-sm text-muted-foreground italic mb-3">"{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"</p>
                       )}
                     </div>
                   ) : (
@@ -321,7 +355,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                           <Icon1 className="w-4 h-4 text-primary" />
                           <span className="font-medium text-foreground">{suggestion.participant1.name}</span>
                           <Badge variant="outline" className="text-xs">
-                            {suggestion.participant1.role}
+                            {SUPERPOWER_LABELS[suggestion.participant1.superpower || ''] || suggestion.participant1.role}
                           </Badge>
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground" />
@@ -329,7 +363,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                           <Icon2 className="w-4 h-4 text-primary" />
                           <span className="font-medium text-foreground">{suggestion.participant2.name}</span>
                           <Badge variant="outline" className="text-xs">
-                            {suggestion.participant2.role}
+                            {SUPERPOWER_LABELS[suggestion.participant2.superpower || ''] || suggestion.participant2.role}
                           </Badge>
                         </div>
                       </div>
