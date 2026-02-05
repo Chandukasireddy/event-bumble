@@ -7,12 +7,50 @@ interface UnreadCounts {
   unreadMessages: number;
 }
 
+// Request browser notification permission
+const requestNotificationPermission = async () => {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  
+  const permission = await Notification.requestPermission();
+  return permission === "granted";
+};
+
+// Send a browser push notification
+const sendBrowserNotification = (title: string, body: string) => {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  
+  // Only send if page is not focused
+  if (document.visibilityState === "visible") return;
+  
+  const notification = new Notification(title, {
+    body,
+    icon: "/favicon.ico",
+    badge: "/favicon.ico",
+    tag: "meetspark-notification",
+    renotify: true,
+  } as NotificationOptions);
+  
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+};
+
 export function useNotifications(eventId: string, currentUserId?: string) {
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
     pendingRequests: 0,
     unreadMessages: 0,
   });
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { toast } = useToast();
+
+  // Request permission on mount
+  useEffect(() => {
+    requestNotificationPermission().then(setNotificationsEnabled);
+  }, []);
 
   const fetchUnreadCounts = useCallback(async () => {
     if (!currentUserId || !eventId) return;
@@ -96,10 +134,20 @@ export function useNotifications(eventId: string, currentUserId?: string) {
             .eq("id", payload.new.requester_id)
             .maybeSingle();
 
+          const name = requester?.name || "Someone";
+          
+          // In-app toast
           toast({
             title: "New Meeting Request! 🎉",
-            description: `${requester?.name || "Someone"} wants to meet you`,
+            description: `${name} wants to meet you`,
           });
+          
+          // Browser push notification
+          sendBrowserNotification(
+            "New Meeting Request! 🎉",
+            `${name} wants to meet you`
+          );
+          
           fetchUnreadCounts();
         }
       )
@@ -135,10 +183,22 @@ export function useNotifications(eventId: string, currentUserId?: string) {
               .eq("id", payload.new.sender_id)
               .maybeSingle();
 
+            const name = sender?.name || "Someone";
+            const messagePreview = (payload.new.message as string).slice(0, 50);
+            const truncated = (payload.new.message as string).length > 50 ? "..." : "";
+
+            // In-app toast
             toast({
               title: "New Message 💬",
-              description: `${sender?.name || "Someone"}: ${(payload.new.message as string).slice(0, 50)}${(payload.new.message as string).length > 50 ? "..." : ""}`,
+              description: `${name}: ${messagePreview}${truncated}`,
             });
+            
+            // Browser push notification
+            sendBrowserNotification(
+              `New Message from ${name}`,
+              `${messagePreview}${truncated}`
+            );
+            
             fetchUnreadCounts();
           }
         }
@@ -157,5 +217,7 @@ export function useNotifications(eventId: string, currentUserId?: string) {
     markRequestSeen,
     markMessagesRead,
     refreshCounts: fetchUnreadCounts,
+    notificationsEnabled,
+    requestPermission: requestNotificationPermission,
   };
 }
