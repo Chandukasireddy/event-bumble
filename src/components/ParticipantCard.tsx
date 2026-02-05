@@ -135,7 +135,6 @@ export function ParticipantCard({
 
   if (compact) {
     const isMe = currentUserId === participant.id;
-    const canMeet = currentUserId && !isMe && requestStatus === "none";
     
     return (
       <Card className="bg-card/50 border-border">
@@ -153,9 +152,9 @@ export function ParticipantCard({
             {participant.role}
           </Badge>
           <div className="flex flex-wrap gap-1">
-            {participant.interests.slice(0, 3).map((interest) => (
+            {participant.interests.slice(0, 3).map((interest, index) => (
               <Badge
-                key={interest}
+                key={`${interest}-${index}`}
                 variant="outline"
                 className="text-[10px] px-1.5 py-0 border-muted-foreground/30"
               >
@@ -187,7 +186,7 @@ export function ParticipantCard({
                   <Clock className="w-3 h-3 mr-1" />
                   Pending
                 </Badge>
-              ) : canMeet ? (
+              ) : (
                 <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
                   <DialogTrigger asChild>
                     <Button
@@ -202,31 +201,40 @@ export function ParticipantCard({
                     <DialogHeader>
                       <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
                       <DialogDescription>
-                        Send a meeting request to connect during the networking session
+                        {currentUserId 
+                          ? "Send a meeting request to connect during the networking session"
+                          : "You need to register for this event first to send meeting requests"
+                        }
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="message-compact">Message (optional)</Label>
-                        <Textarea
-                          id="message-compact"
-                          placeholder="Hi! I'd love to chat about..."
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          className="bg-secondary border-border"
-                        />
+                    {currentUserId ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="message-compact">Message (optional)</Label>
+                          <Textarea
+                            id="message-compact"
+                            placeholder="Hi! I'd love to chat about..."
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            className="bg-secondary border-border"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleRequestMeeting}
+                          disabled={isSubmitting}
+                          className="w-full bg-primary hover:bg-primary/90"
+                        >
+                          {isSubmitting ? "Sending..." : "Send Request"}
+                        </Button>
                       </div>
-                      <Button
-                        onClick={handleRequestMeeting}
-                        disabled={isSubmitting}
-                        className="w-full bg-primary hover:bg-primary/90"
-                      >
-                        {isSubmitting ? "Sending..." : "Send Request"}
-                      </Button>
-                    </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Please register for this event first using the registration link.
+                      </p>
+                    )}
                   </DialogContent>
                 </Dialog>
-              ) : null
+              )
             )}
           </div>
         </CardContent>
