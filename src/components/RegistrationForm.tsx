@@ -207,15 +207,15 @@
          </div>
        </div>
  
-       <div className="space-y-2">
-         <Label htmlFor="telegram" className="text-foreground/80">Telegram Handle</Label>
-         <Input
-           id="telegram"
-           placeholder="@yourtelegram"
-           value={telegramHandle}
-           onChange={(e) => setTelegramHandle(e.target.value)}
-           className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
-         />
+        <div className="space-y-2">
+          <Label htmlFor="linkedin" className="text-foreground/80">LinkedIn Profile URL</Label>
+          <Input
+            id="linkedin"
+            placeholder="https://linkedin.com/in/yourprofile"
+            value={telegramHandle}
+            onChange={(e) => setTelegramHandle(e.target.value)}
+            className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
+          />
        </div>
  
        <Button

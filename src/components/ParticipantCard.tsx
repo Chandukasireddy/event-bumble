@@ -131,14 +131,11 @@ export function ParticipantCard({
             className="flex-1 border-muted-foreground/30"
             onClick={(e) => {
               e.stopPropagation();
-              window.open(
-                `https://t.me/${participant.telegram_handle.replace("@", "")}`,
-                "_blank"
-              );
+              window.open(participant.telegram_handle, "_blank");
             }}
           >
             <ExternalLink className="w-4 h-4 mr-1" />
-            Telegram
+            LinkedIn
           </Button>
 
           <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>

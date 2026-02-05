@@ -299,9 +299,10 @@ export default function Profile() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="telegram" className="text-foreground/80">Telegram Handle</Label>
+                      <Label htmlFor="linkedin" className="text-foreground/80">LinkedIn Profile URL</Label>
                       <Input
-                        id="telegram"
+                        id="linkedin"
+                        placeholder="https://linkedin.com/in/yourprofile"
                         value={telegramHandle}
                         onChange={(e) => setTelegramHandle(e.target.value)}
                         className="bg-secondary border-border"
@@ -362,7 +363,7 @@ export default function Profile() {
                     </div>
 
                     <div>
-                      <p className="text-sm text-muted-foreground">Telegram</p>
+                      <p className="text-sm text-muted-foreground">LinkedIn</p>
                       <p className="text-foreground font-medium">{registration.telegram_handle}</p>
                     </div>
                   </div>
