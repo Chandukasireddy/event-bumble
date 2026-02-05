@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Code, Palette, Briefcase, MessageSquare, ExternalLink } from "lucide-react";
+import { Code, Palette, Briefcase, MessageSquare, ExternalLink, Check, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,7 +51,45 @@ export function ParticipantCard({
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<"none" | "pending" | "accepted">("none");
   const { toast } = useToast();
+
+  // Check existing request status
+  useEffect(() => {
+    const checkExistingRequest = async () => {
+      if (!currentUserId || currentUserId === participant.id) return;
+      
+      const { data } = await supabase
+        .from("meeting_requests")
+        .select("status")
+        .eq("event_id", eventId)
+        .or(`and(requester_id.eq.${currentUserId},target_id.eq.${participant.id}),and(requester_id.eq.${participant.id},target_id.eq.${currentUserId})`)
+        .in("status", ["pending", "accepted"])
+        .maybeSingle();
+      
+      if (data) {
+        setRequestStatus(data.status as "pending" | "accepted");
+      } else {
+        setRequestStatus("none");
+      }
+    };
+    
+    checkExistingRequest();
+    
+    // Subscribe to changes
+    const channel = supabase
+      .channel(`request-status-${participant.id}-${currentUserId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "meeting_requests", filter: `event_id=eq.${eventId}` },
+        () => checkExistingRequest()
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, participant.id, eventId]);
 
   const RoleIcon = ROLE_ICONS[participant.role as keyof typeof ROLE_ICONS] || Code;
 
@@ -96,6 +134,9 @@ export function ParticipantCard({
   };
 
   if (compact) {
+    const isMe = currentUserId === participant.id;
+    const canMeet = currentUserId && !isMe && requestStatus === "none";
+    
     return (
       <Card className="bg-card/50 border-border">
         <CardHeader className="pb-2 pt-3 px-3">
@@ -103,6 +144,7 @@ export function ParticipantCard({
             <RoleIcon className="w-4 h-4 text-primary flex-shrink-0" />
             <CardTitle className="text-foreground text-sm font-medium truncate">
               {participant.name}
+              {isMe && <span className="text-xs text-muted-foreground ml-1">(You)</span>}
             </CardTitle>
           </div>
         </CardHeader>
@@ -124,15 +166,69 @@ export function ParticipantCard({
               <span className="text-[10px] text-muted-foreground">+{participant.interests.length - 3}</span>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-7 text-xs border-muted-foreground/30"
-            onClick={() => window.open(participant.telegram_handle, "_blank")}
-          >
-            <ExternalLink className="w-3 h-3 mr-1" />
-            LinkedIn
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-7 text-xs border-muted-foreground/30"
+              onClick={() => window.open(participant.telegram_handle, "_blank")}
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              LinkedIn
+            </Button>
+            {!isMe && (
+              requestStatus === "accepted" ? (
+                <Badge className="h-7 px-2 bg-accent/20 text-accent text-xs flex items-center">
+                  <Check className="w-3 h-3 mr-1" />
+                  Matched
+                </Badge>
+              ) : requestStatus === "pending" ? (
+                <Badge className="h-7 px-2 bg-primary/20 text-primary text-xs flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  Pending
+                </Badge>
+              ) : canMeet ? (
+                <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90"
+                    >
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      Meet
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border">
+                    <DialogHeader>
+                      <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
+                      <DialogDescription>
+                        Send a meeting request to connect during the networking session
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="message-compact">Message (optional)</Label>
+                        <Textarea
+                          id="message-compact"
+                          placeholder="Hi! I'd love to chat about..."
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          className="bg-secondary border-border"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleRequestMeeting}
+                        disabled={isSubmitting}
+                        className="w-full bg-primary hover:bg-primary/90"
+                      >
+                        {isSubmitting ? "Sending..." : "Send Request"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              ) : null
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -184,45 +280,57 @@ export function ParticipantCard({
           </Button>
 
           {currentUserId && currentUserId !== participant.id && (
-            <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
-              <DialogTrigger asChild>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-primary hover:bg-primary/90"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Request Meet
-                </Button>
-              </DialogTrigger>
-            <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
-              <DialogHeader>
-                <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
-                <DialogDescription>
-                  Send a meeting request to connect during the networking session
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message (optional)</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Hi! I'd love to chat about..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="bg-secondary border-border"
-                  />
+            requestStatus === "accepted" ? (
+              <Badge className="h-8 px-3 bg-accent/20 text-accent flex items-center">
+                <Check className="w-4 h-4 mr-1" />
+                Matched
+              </Badge>
+            ) : requestStatus === "pending" ? (
+              <Badge className="h-8 px-3 bg-primary/20 text-primary flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                Pending
+              </Badge>
+            ) : (
+              <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    Request Meet
+                  </Button>
+                </DialogTrigger>
+              <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                <DialogHeader>
+                  <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
+                  <DialogDescription>
+                    Send a meeting request to connect during the networking session
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message (optional)</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Hi! I'd love to chat about..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="bg-secondary border-border"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleRequestMeeting}
+                    disabled={isSubmitting}
+                    className="w-full bg-primary hover:bg-primary/90"
+                  >
+                    {isSubmitting ? "Sending..." : "Send Request"}
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleRequestMeeting}
-                  disabled={isSubmitting}
-                  className="w-full bg-primary hover:bg-primary/90"
-                >
-                  {isSubmitting ? "Sending..." : "Send Request"}
-                </Button>
-              </div>
-            </DialogContent>
-            </Dialog>
+              </DialogContent>
+              </Dialog>
+            )
           )}
         </div>
       </CardContent>
