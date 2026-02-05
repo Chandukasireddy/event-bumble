@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, MessageSquare, Sparkles, Send, MapPin } from "lucide-react";
+import { Check, X, Clock, MessageSquare, Sparkles, Send, MapPin, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
+import { MeetingChat } from "./MeetingChat";
 interface Participant {
   id: string;
   name: string;
@@ -36,6 +36,7 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
   const [receivedRequests, setReceivedRequests] = useState<MeetingRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<MeetingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [openChatId, setOpenChatId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -177,6 +178,7 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
           {acceptedRequests.map((request) => {
             const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
             const otherPerson = getParticipant(otherPersonId);
+            const isChatOpen = openChatId === request.id;
 
             if (!otherPerson) return null;
 
@@ -188,10 +190,21 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
                       {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-accent" />}
                       Meeting with {otherPerson.name}
                     </CardTitle>
-                    <Badge className="bg-accent/20 text-accent">
-                      <Check className="w-3 h-3 mr-1" />
-                      Accepted
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={isChatOpen ? "default" : "outline"}
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setOpenChatId(isChatOpen ? null : request.id)}
+                      >
+                        <MessageCircle className="w-3 h-3 mr-1" />
+                        Chat
+                      </Button>
+                      <Badge className="bg-accent/20 text-accent">
+                        <Check className="w-3 h-3 mr-1" />
+                        Accepted
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -209,6 +222,14 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
                           <p className="text-sm text-foreground">{otherPerson.how_to_find_me}</p>
                         </div>
                       </div>
+                    )}
+                    {isChatOpen && (
+                      <MeetingChat
+                        meetingRequestId={request.id}
+                        currentUserId={currentUserId}
+                        otherPersonName={otherPerson.name}
+                        onClose={() => setOpenChatId(null)}
+                      />
                     )}
                   </div>
                 </CardContent>

@@ -92,6 +92,45 @@ export type Database = {
           },
         ]
       }
+      meeting_messages: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_request_id: string
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_request_id: string
+          message: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_request_id?: string
+          message?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_messages_meeting_request_id_fkey"
+            columns: ["meeting_request_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_requests: {
         Row: {
           created_at: string
