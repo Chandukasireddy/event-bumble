@@ -47,6 +47,7 @@ interface Participant {
   ideal_copilot?: string;
   offscreen_life?: string;
   bio?: string;
+  how_to_find_me?: string;
 }
 
 const ROLE_ICONS = {

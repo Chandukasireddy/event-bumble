@@ -74,12 +74,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
-  // Auto-generate matches when currentUser is available
-  useEffect(() => {
-    if (currentUser && participants.length >= 2 && !hasGenerated) {
-      generateMatches();
-    }
-  }, [currentUser, participants.length]);
+  // Removed auto-generate - only generate on user click
 
   const generateMatches = async () => {
     if (participants.length < 2) {
