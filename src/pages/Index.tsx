@@ -22,8 +22,8 @@ export default function Index() {
                 <Zap className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">Event Matchmaker</h1>
-                <p className="text-xs text-muted-foreground">Smart Networking Platform</p>
+              <h1 className="font-bold text-lg text-foreground">MeetSpark</h1>
+              <p className="text-xs text-muted-foreground">AI-Powered Networking</p>
               </div>
             </div>
             <Button asChild className="bg-primary hover:bg-primary/90 glow-purple">
