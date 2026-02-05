@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Code, Palette, Briefcase, X, Send, Calendar, MapPin, CheckCircle2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Zap, Code, Palette, Briefcase, X, Send, Calendar, MapPin, CheckCircle2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,6 +35,14 @@ interface Event {
   location: string | null;
 }
 
+interface ExistingRegistration {
+  id: string;
+  name: string;
+  role: string;
+  interests: string[];
+  telegram_handle: string;
+}
+
 export default function PublicRegister() {
   const { shareCode } = useParams<{ shareCode: string }>();
   const [event, setEvent] = useState<Event | null>(null);
@@ -42,6 +50,13 @@ export default function PublicRegister() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
+  
+  // Existing registrations for autocomplete
+  const [existingRegistrations, setExistingRegistrations] = useState<ExistingRegistration[]>([]);
+  const [nameSuggestions, setNameSuggestions] = useState<ExistingRegistration[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedExisting, setSelectedExisting] = useState<ExistingRegistration | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const [name, setName] = useState("");
   const [role, setRole] = useState<string>("");
@@ -57,6 +72,17 @@ export default function PublicRegister() {
     }
   }, [shareCode]);
 
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fetchEvent = async () => {
     const { data, error } = await supabase
       .from("events")
@@ -66,10 +92,54 @@ export default function PublicRegister() {
 
     if (error || !data) {
       console.error("Error fetching event:", error);
-    } else {
-      setEvent(data);
+      setIsLoading(false);
+      return;
     }
+    
+    setEvent(data);
+    
+    // Fetch existing registrations for this event (for autocomplete)
+    const { data: registrations } = await supabase
+      .from("registrations")
+      .select("id, name, role, interests, telegram_handle")
+      .eq("event_id", data.id);
+    
+    if (registrations) {
+      setExistingRegistrations(registrations);
+    }
+    
     setIsLoading(false);
+  };
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    setSelectedExisting(null);
+    
+    // Show suggestions after 3 characters
+    if (value.length >= 3) {
+      const matches = existingRegistrations.filter(
+        (reg) => reg.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setNameSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
+      setNameSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectExistingRegistration = (reg: ExistingRegistration) => {
+    setSelectedExisting(reg);
+    setName(reg.name);
+    setRole(reg.role);
+    setInterests(reg.interests);
+    setTelegramHandle(reg.telegram_handle === "@placeholder" ? "" : reg.telegram_handle);
+    setShowSuggestions(false);
+    
+    toast({
+      title: "Profile found!",
+      description: "Complete your details to update your registration",
+    });
   };
 
   const addInterest = (interest: string) => {
@@ -100,24 +170,43 @@ export default function PublicRegister() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase
-        .from("registrations")
-        .insert({
-          name,
-          role,
-          interests,
-          telegram_handle: telegramHandle,
-          event_id: event.id,
-        })
-        .select()
-        .single();
+      let resultId: string;
+      
+      if (selectedExisting) {
+        // Update existing registration
+        const { error } = await supabase
+          .from("registrations")
+          .update({
+            role,
+            interests,
+            telegram_handle: telegramHandle,
+          })
+          .eq("id", selectedExisting.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        resultId = selectedExisting.id;
+      } else {
+        // Create new registration
+        const { data, error } = await supabase
+          .from("registrations")
+          .insert({
+            name,
+            role,
+            interests,
+            telegram_handle: telegramHandle,
+            event_id: event.id,
+          })
+          .select()
+          .single();
 
-      setRegistrationId(data.id);
+        if (error) throw error;
+        resultId = data.id;
+      }
+
+      setRegistrationId(resultId);
       setIsSuccess(true);
       toast({
-        title: "Registration successful!",
+        title: selectedExisting ? "Profile updated!" : "Registration successful!",
         description: "You're now registered for networking",
       });
     } catch (error) {
@@ -234,15 +323,46 @@ export default function PublicRegister() {
             <Card className="bg-card/50 border-border">
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
+                  {/* Name with Autocomplete */}
+                  <div className="space-y-2 relative" ref={suggestionsRef}>
                     <Label htmlFor="name" className="text-foreground/80">Name *</Label>
                     <Input
                       id="name"
-                      placeholder="Your name"
+                      placeholder="Start typing your name..."
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      onFocus={() => name.length >= 3 && nameSuggestions.length > 0 && setShowSuggestions(true)}
                       className="bg-secondary border-border focus:border-primary"
+                      autoComplete="off"
                     />
+                    {selectedExisting && (
+                      <p className="text-xs text-accent flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Found your registration! Update your details below.
+                      </p>
+                    )}
+                    
+                    {/* Autocomplete dropdown */}
+                    {showSuggestions && nameSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {nameSuggestions.map((reg) => (
+                          <button
+                            key={reg.id}
+                            type="button"
+                            className="w-full px-4 py-3 text-left hover:bg-secondary/50 flex items-center gap-3 transition-colors"
+                            onClick={() => selectExistingRegistration(reg)}
+                          >
+                            <User className="w-4 h-4 text-primary flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-foreground">{reg.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Click to complete your registration
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -340,11 +460,11 @@ export default function PublicRegister() {
                     className="w-full bg-primary hover:bg-primary/90 glow-purple"
                   >
                     {isSubmitting ? (
-                      "Registering..."
+                      "Saving..."
                     ) : (
                       <>
                         <Send className="h-4 w-4 mr-2" />
-                        Register
+                        {selectedExisting ? "Update Registration" : "Register"}
                       </>
                     )}
                   </Button>
