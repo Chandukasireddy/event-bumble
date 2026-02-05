@@ -37,6 +37,7 @@ interface ParticipantCardProps {
   onSelect?: () => void;
   isSelected?: boolean;
   currentUserId?: string;
+  compact?: boolean;
 }
 
 export function ParticipantCard({
@@ -45,6 +46,7 @@ export function ParticipantCard({
   onSelect,
   isSelected,
   currentUserId,
+  compact = false,
 }: ParticipantCardProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [message, setMessage] = useState("");
@@ -93,10 +95,53 @@ export function ParticipantCard({
     }
   };
 
+  if (compact) {
+    return (
+      <Card className="bg-card/50 border-border">
+        <CardHeader className="pb-2 pt-3 px-3">
+          <div className="flex items-center gap-2">
+            <RoleIcon className="w-4 h-4 text-primary flex-shrink-0" />
+            <CardTitle className="text-foreground text-sm font-medium truncate">
+              {participant.name}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="px-3 pb-3 pt-0 space-y-2">
+          <Badge variant="secondary" className="bg-primary/20 text-primary text-xs">
+            {participant.role}
+          </Badge>
+          <div className="flex flex-wrap gap-1">
+            {participant.interests.slice(0, 3).map((interest) => (
+              <Badge
+                key={interest}
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 border-muted-foreground/30"
+              >
+                {interest}
+              </Badge>
+            ))}
+            {participant.interests.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{participant.interests.length - 3}</span>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-7 text-xs border-muted-foreground/30"
+            onClick={() => window.open(participant.telegram_handle, "_blank")}
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            LinkedIn
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card
-      className={`bg-card/50 border-border cursor-pointer transition-all hover:border-primary/50 ${
-        isSelected ? "border-primary glow-purple" : ""
+      className={`bg-card/50 border-border transition-all hover:border-primary/50 ${
+        isSelected ? "border-primary" : ""
       }`}
       onClick={onSelect}
     >

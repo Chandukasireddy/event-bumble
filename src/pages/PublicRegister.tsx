@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +45,7 @@ interface ExistingRegistration {
 
 export default function PublicRegister() {
   const { shareCode } = useParams<{ shareCode: string }>();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -204,11 +205,13 @@ export default function PublicRegister() {
       }
 
       setRegistrationId(resultId);
-      setIsSuccess(true);
       toast({
         title: selectedExisting ? "Profile updated!" : "Registration successful!",
-        description: "You're now registered for networking",
+        description: "Redirecting to event dashboard...",
       });
+      
+      // Redirect to event dashboard
+      navigate(`/event/${event.id}`);
     } catch (error) {
       console.error("Registration error:", error);
       toast({
