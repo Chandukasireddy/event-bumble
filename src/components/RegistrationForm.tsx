@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Send, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,16 @@ const OFFSCREEN_OPTIONS = [
   { value: "city", label: "🖼️ In the city", desc: "Galleries/Music/Food" },
   { value: "home", label: "🍳 In the kitchen", desc: "Cooking/Hosting" },
   { value: "gaming", label: "🕹️ In the game", desc: "Sports/Gaming/Chess" },
+];
+
+const FIND_ME_SUGGESTIONS = [
+  "I'm wearing a blue jacket",
+  "I have a red cap on",
+  "I'm the one with glasses",
+  "Look for the purple hoodie",
+  "I'll be near the coffee station",
+  "I'm wearing a band t-shirt",
+  "I have a laptop sticker collection",
 ];
 
 interface RegistrationFormProps {
@@ -81,8 +91,18 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
   const [offscreenLife, setOffscreenLife] = useState("");
   const [bio, setBio] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [howToFindMe, setHowToFindMe] = useState("");
+  const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Rotate suggestions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSuggestion((prev) => (prev + 1) % FIND_ME_SUGGESTIONS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +131,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
           ideal_copilot: idealCopilot,
           offscreen_life: offscreenLife,
           bio,
+          how_to_find_me: howToFindMe || null,
         })
         .select()
         .single();
@@ -255,6 +276,33 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
           onChange={(e) => setLinkedinUrl(e.target.value)}
           className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
         />
+      </div>
+
+      {/* How to Find Me (Optional) */}
+      <div className="space-y-2">
+        <Label htmlFor="howToFindMe" className="text-foreground/80 flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          How to Find Me (Optional)
+        </Label>
+        <Input
+          id="howToFindMe"
+          placeholder={FIND_ME_SUGGESTIONS[currentSuggestion]}
+          value={howToFindMe}
+          onChange={(e) => setHowToFindMe(e.target.value)}
+          className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
+        />
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {FIND_ME_SUGGESTIONS.slice(0, 4).map((suggestion, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setHowToFindMe(suggestion)}
+              className="text-xs px-2 py-1 rounded-full bg-secondary/70 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
       </div>
 
       <Button
