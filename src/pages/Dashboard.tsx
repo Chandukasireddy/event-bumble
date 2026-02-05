@@ -123,11 +123,13 @@ export default function Dashboard() {
   };
 
   const copyShareLink = (shareCode: string) => {
-    const link = `${window.location.origin}/register/${shareCode}`;
+    // Use the published URL for public access
+    const publishedUrl = "https://event-bumble.lovable.app";
+    const link = `${publishedUrl}/register/${shareCode}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copied!",
-      description: "Share this link with participants",
+      description: link,
     });
   };
 
