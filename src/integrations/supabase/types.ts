@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          location: string | null
+          name: string
+          networking_duration: number | null
+          organizer_code: string
+          share_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          networking_duration?: number | null
+          organizer_code?: string
+          share_code?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          networking_duration?: number | null
+          organizer_code?: string
+          share_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           created_at: string
@@ -53,9 +92,71 @@ export type Database = {
           },
         ]
       }
+      meeting_requests: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          is_ai_suggested: boolean | null
+          message: string | null
+          requester_id: string
+          status: string
+          suggested_time: string | null
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          is_ai_suggested?: boolean | null
+          message?: string | null
+          requester_id: string
+          status?: string
+          suggested_time?: string | null
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_ai_suggested?: boolean | null
+          message?: string | null
+          requester_id?: string
+          status?: string
+          suggested_time?: string | null
+          target_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_requests_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registrations: {
         Row: {
           created_at: string
+          event_id: string | null
           id: string
           interests: string[]
           match_id: string | null
@@ -65,6 +166,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_id?: string | null
           id?: string
           interests?: string[]
           match_id?: string | null
@@ -74,6 +176,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_id?: string | null
           id?: string
           interests?: string[]
           match_id?: string | null
@@ -81,7 +184,15 @@ export type Database = {
           role?: string
           telegram_handle?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
