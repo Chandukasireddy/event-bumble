@@ -28,9 +28,10 @@ interface MeetingRequest {
 interface MeetingRequestsListProps {
   eventId: string;
   participants: Participant[];
+  currentUserId?: string;
 }
 
-export function MeetingRequestsList({ eventId, participants }: MeetingRequestsListProps) {
+export function MeetingRequestsList({ eventId, participants, currentUserId }: MeetingRequestsListProps) {
   const [requests, setRequests] = useState<MeetingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -39,7 +40,7 @@ export function MeetingRequestsList({ eventId, participants }: MeetingRequestsLi
     fetchRequests();
 
     const channel = supabase
-      .channel(`meeting-requests-${eventId}`)
+      .channel(`meeting-requests-${eventId}-${currentUserId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "meeting_requests", filter: `event_id=eq.${eventId}` },
@@ -52,13 +53,20 @@ export function MeetingRequestsList({ eventId, participants }: MeetingRequestsLi
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId]);
+  }, [eventId, currentUserId]);
 
   const fetchRequests = async () => {
+    if (!currentUserId) {
+      setRequests([]);
+      setIsLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("meeting_requests")
       .select("*")
       .eq("event_id", eventId)
+      .eq("target_id", currentUserId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -108,14 +116,28 @@ export function MeetingRequestsList({ eventId, participants }: MeetingRequestsLi
     );
   }
 
+  if (!currentUserId) {
+    return (
+      <Card className="bg-card/50 border-border">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <MessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Register to see your requests</h3>
+          <p className="text-muted-foreground">
+            You need to be registered for this event to view meeting requests
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (requests.length === 0) {
     return (
       <Card className="bg-card/50 border-border">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <MessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No meeting requests yet</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">No meeting requests for you yet</h3>
           <p className="text-muted-foreground">
-            Participants can request meetings from the participants tab
+            When someone wants to meet you, their request will appear here
           </p>
         </CardContent>
       </Card>

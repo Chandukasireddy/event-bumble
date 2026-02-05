@@ -173,7 +173,7 @@ export function ParticipantCard({
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 border-muted-foreground/30"
+            className={currentUserId === participant.id ? "flex-1" : "flex-1 border-muted-foreground/30"}
             onClick={(e) => {
               e.stopPropagation();
               window.open(participant.telegram_handle, "_blank");
@@ -183,17 +183,18 @@ export function ParticipantCard({
             LinkedIn
           </Button>
 
-          <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
-            <DialogTrigger asChild>
-              <Button
-                size="sm"
-                className="flex-1 bg-primary hover:bg-primary/90"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MessageSquare className="w-4 h-4 mr-1" />
-                Request Meet
-              </Button>
-            </DialogTrigger>
+          {currentUserId && currentUserId !== participant.id && (
+            <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Request Meet
+                </Button>
+              </DialogTrigger>
             <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
               <DialogHeader>
                 <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
@@ -221,7 +222,8 @@ export function ParticipantCard({
                 </Button>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          )}
         </div>
       </CardContent>
     </Card>
