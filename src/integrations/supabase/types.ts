@@ -98,6 +98,7 @@ export type Database = {
           id: string
           meeting_request_id: string
           message: string
+          read_at: string | null
           sender_id: string
         }
         Insert: {
@@ -105,6 +106,7 @@ export type Database = {
           id?: string
           meeting_request_id: string
           message: string
+          read_at?: string | null
           sender_id: string
         }
         Update: {
@@ -112,6 +114,7 @@ export type Database = {
           id?: string
           meeting_request_id?: string
           message?: string
+          read_at?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -143,6 +146,7 @@ export type Database = {
           message: string | null
           requester_id: string
           reschedule_message: string | null
+          seen_by_target: boolean
           status: string
           suggested_time: string | null
           target_id: string
@@ -159,6 +163,7 @@ export type Database = {
           message?: string | null
           requester_id: string
           reschedule_message?: string | null
+          seen_by_target?: boolean
           status?: string
           suggested_time?: string | null
           target_id: string
@@ -175,6 +180,7 @@ export type Database = {
           message?: string | null
           requester_id?: string
           reschedule_message?: string | null
+          seen_by_target?: boolean
           status?: string
           suggested_time?: string | null
           target_id?: string

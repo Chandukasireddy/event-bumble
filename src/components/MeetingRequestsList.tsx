@@ -24,15 +24,24 @@ interface MeetingRequest {
   is_ai_suggested: boolean;
   suggested_time: string | null;
   created_at: string;
+  seen_by_target?: boolean;
 }
 
 interface MeetingRequestsListProps {
   eventId: string;
   participants: Participant[];
   currentUserId?: string;
+  onMarkRequestSeen?: (requestId: string) => void;
+  onMarkMessagesRead?: (meetingRequestId: string) => void;
 }
 
-export function MeetingRequestsList({ eventId, participants, currentUserId }: MeetingRequestsListProps) {
+export function MeetingRequestsList({ 
+  eventId, 
+  participants, 
+  currentUserId,
+  onMarkRequestSeen,
+  onMarkMessagesRead,
+}: MeetingRequestsListProps) {
   const [receivedRequests, setReceivedRequests] = useState<MeetingRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<MeetingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,6 +66,26 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
       supabase.removeChannel(channel);
     };
   }, [eventId, currentUserId]);
+
+  // Mark pending requests as seen when component loads
+  useEffect(() => {
+    if (onMarkRequestSeen && receivedRequests.length > 0) {
+      receivedRequests
+        .filter(r => r.status === "pending" && !r.seen_by_target)
+        .forEach(r => onMarkRequestSeen(r.id));
+    }
+  }, [receivedRequests, onMarkRequestSeen]);
+
+  const handleOpenChat = (requestId: string) => {
+    if (openChatId === requestId) {
+      setOpenChatId(null);
+    } else {
+      setOpenChatId(requestId);
+      if (onMarkMessagesRead) {
+        onMarkMessagesRead(requestId);
+      }
+    }
+  };
 
   const fetchRequests = async () => {
     if (!currentUserId) {
@@ -195,7 +224,7 @@ export function MeetingRequestsList({ eventId, participants, currentUserId }: Me
                         size="sm"
                         variant={isChatOpen ? "default" : "outline"}
                         className="h-7 px-2 text-xs"
-                        onClick={() => setOpenChatId(isChatOpen ? null : request.id)}
+                        onClick={() => handleOpenChat(request.id)}
                       >
                         <MessageCircle className="w-3 h-3 mr-1" />
                         Chat
