@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, Calendar, MapPin, CheckCircle2, User, Send } from "lucide-react";
+import { Calendar, MapPin, CheckCircle2, User, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { SparkleIcon } from "@/components/icons/GeometricIcons";
+import { NetworkBackground } from "@/components/NetworkBackground";
+import { CornerBracket, CornerBracketFlipped } from "@/components/icons/DecorativeLines";
 
 const VIBE_OPTIONS = [
   { value: "productivity", label: "⚡ Productivity & Automation" },
@@ -275,7 +277,7 @@ export default function PublicRegister() {
   if (!event) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <Sparkles className="w-12 h-12 text-muted-foreground mb-4" />
+        <SparkleIcon className="text-muted-foreground mb-4" size={48} />
         <h2 className="font-serif text-xl font-medium text-foreground mb-2">Event not found</h2>
         <p className="text-muted-foreground">This registration link may be invalid or expired</p>
       </div>
@@ -284,22 +286,19 @@ export default function PublicRegister() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Subtle background accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
+      {/* Network Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+        <NetworkBackground />
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="border-b border-border backdrop-blur-sm bg-background/80">
-          <div className="container mx-auto px-4 py-4">
+        <header className="py-6">
+          <div className="container mx-auto px-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded flex items-center justify-center bg-primary/10 border border-primary/20">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
+              <SparkleIcon className="text-primary" size={28} />
               <div>
-                <h1 className="font-serif font-semibold text-lg text-foreground">{event.name}</h1>
+                <h1 className="font-serif font-medium text-lg text-foreground">{event.name}</h1>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   {event.event_date && (
                     <span className="flex items-center gap-1">
@@ -469,20 +468,22 @@ export default function PublicRegister() {
                     />
                   </div>
 
-                  <Button
+                  {/* Text link CTA */}
+                  <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold transition-all duration-300"
+                    className="w-full text-link-cta justify-center py-4 border-t border-border/50 mt-6 disabled:opacity-50"
                   >
                     {isSubmitting ? (
-                      "Registering..."
+                      "Finding your match..."
                     ) : (
                       <>
-                        <Send className="h-4 w-4 mr-2" />
+                        <SparkleIcon className="text-primary" size={20} />
                         Find My Match
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
-                  </Button>
+                  </button>
                 </form>
               </CardContent>
             </Card>

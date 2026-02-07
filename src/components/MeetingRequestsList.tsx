@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, MessageSquare, Sparkles, Send, MapPin, MessageCircle } from "lucide-react";
+import { Check, X, Clock, MessageSquare, Sparkles, Send, MapPin, MessageCircle, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MeetingChat } from "./MeetingChat";
+
 interface Participant {
   id: string;
   name: string;
@@ -139,17 +138,6 @@ export function MeetingRequestsList({
 
   const getParticipant = (id: string) => participants.find((p) => p.id === id);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "accepted":
-        return "bg-accent/20 text-accent";
-      case "declined":
-        return "bg-destructive/20 text-destructive";
-      default:
-        return "bg-primary/20 text-primary";
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -160,15 +148,13 @@ export function MeetingRequestsList({
 
   if (!currentUserId) {
     return (
-      <Card className="bg-card/50 border-border">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <MessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Register to see your requests</h3>
-          <p className="text-muted-foreground">
-            You need to be registered for this event to view meeting requests
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12">
+        <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="font-serif text-lg font-medium text-foreground mb-2">Register to see your requests</h3>
+        <p className="text-muted-foreground">
+          You need to be registered for this event to view meeting requests
+        </p>
+      </div>
     );
   }
 
@@ -177,15 +163,13 @@ export function MeetingRequestsList({
 
   if (hasNoRequests) {
     return (
-      <Card className="bg-card/50 border-border">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <MessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No meeting requests yet</h3>
-          <p className="text-muted-foreground">
-            Send a meeting request to someone or wait for requests to appear here
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12">
+        <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="font-serif text-lg font-medium text-foreground mb-2">No meeting requests yet</h3>
+        <p className="text-muted-foreground">
+          Send a meeting request to someone or wait for requests to appear here
+        </p>
+      </div>
     );
   }
 
@@ -196,15 +180,15 @@ export function MeetingRequestsList({
   const declinedRequests = allRequests.filter(r => r.status === "declined");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Accepted Meetings */}
       {acceptedRequests.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-accent flex items-center gap-2">
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-success flex items-center gap-2">
             <Check className="w-4 h-4" />
             Accepted to Meet ({acceptedRequests.length})
           </h3>
-          {acceptedRequests.map((request) => {
+          {acceptedRequests.map((request, index) => {
             const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
             const otherPerson = getParticipant(otherPersonId);
             const isChatOpen = openChatId === request.id;
@@ -212,57 +196,63 @@ export function MeetingRequestsList({
             if (!otherPerson) return null;
 
             return (
-              <Card key={request.id} className="bg-accent/10 border-accent/30">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-foreground text-base flex items-center gap-2">
-                      {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-accent" />}
+              <div 
+                key={request.id} 
+                className={`py-6 border-b border-border/30 last:border-b-0 ${
+                  index % 2 === 1 ? 'md:pl-4' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-primary" />}
+                    <span className="font-serif text-lg font-medium text-foreground">
                       Meeting with {otherPerson.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant={isChatOpen ? "default" : "outline"}
-                        className="h-7 px-2 text-xs"
-                        onClick={() => handleOpenChat(request.id)}
-                      >
-                        <MessageCircle className="w-3 h-3 mr-1" />
-                        Chat
-                      </Button>
-                      <Badge className="bg-accent/20 text-accent">
-                        <Check className="w-3 h-3 mr-1" />
-                        Accepted
-                      </Badge>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleOpenChat(request.id)}
+                      className={`text-sm flex items-center gap-1 transition-colors ${
+                        isChatOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Chat
+                    </button>
+                    <span className="text-xs text-success flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Accepted
+                    </span>
+                  </div>
+                </div>
+                
+                {request.message && (
+                  <p className="text-sm text-muted-foreground font-serif italic mb-3">
+                    "{request.message}"
+                  </p>
+                )}
+                
+                {otherPerson.how_to_find_me && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                    <div>
+                      <span className="text-xs text-muted-foreground">How to find them: </span>
+                      <span className="text-foreground">{otherPerson.how_to_find_me}</span>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {request.message && (
-                      <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
-                        "{request.message}"
-                      </p>
-                    )}
-                    {otherPerson.how_to_find_me && (
-                      <div className="flex items-start gap-2 bg-primary/10 p-3 rounded-lg">
-                        <MapPin className="w-4 h-4 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">How to find them:</p>
-                          <p className="text-sm text-foreground">{otherPerson.how_to_find_me}</p>
-                        </div>
-                      </div>
-                    )}
-                    {isChatOpen && (
-                      <MeetingChat
-                        meetingRequestId={request.id}
-                        currentUserId={currentUserId}
-                        otherPersonName={otherPerson.name}
-                        onClose={() => setOpenChatId(null)}
-                      />
-                    )}
+                )}
+                
+                {isChatOpen && (
+                  <div className="mt-4">
+                    <MeetingChat
+                      meetingRequestId={request.id}
+                      currentUserId={currentUserId}
+                      otherPersonName={otherPerson.name}
+                      onClose={() => setOpenChatId(null)}
+                    />
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </div>
             );
           })}
         </div>
@@ -270,58 +260,58 @@ export function MeetingRequestsList({
 
       {/* Pending Received Requests */}
       {pendingReceived.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h3 className="text-sm font-medium text-primary flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
             Requests for You ({pendingReceived.length})
           </h3>
-          {pendingReceived.map((request) => {
+          {pendingReceived.map((request, index) => {
             const requester = getParticipant(request.requester_id);
             if (!requester) return null;
 
             return (
-              <Card key={request.id} className="bg-card/50 border-border">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-foreground text-base flex items-center gap-2">
-                      {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-accent" />}
+              <div 
+                key={request.id} 
+                className={`py-6 border-b border-border/30 last:border-b-0 ${
+                  index % 2 === 1 ? 'md:pl-4' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-primary" />}
+                    <span className="font-serif text-lg font-medium text-foreground">
                       {requester.name} wants to meet
-                    </CardTitle>
-                    <Badge className="bg-primary/20 text-primary">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Pending
-                    </Badge>
+                    </span>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {request.message && (
-                      <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
-                        "{request.message}"
-                      </p>
-                    )}
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 border-destructive/50 text-destructive hover:bg-destructive/10"
-                        onClick={() => updateRequestStatus(request.id, "declined")}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Decline
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
-                        onClick={() => updateRequestStatus(request.id, "accepted")}
-                      >
-                        <Check className="w-4 h-4 mr-1" />
-                        Accept
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  <span className="text-xs text-primary flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Pending
+                  </span>
+                </div>
+                
+                {request.message && (
+                  <p className="text-sm text-muted-foreground font-serif italic mb-4">
+                    "{request.message}"
+                  </p>
+                )}
+                
+                {/* Text link actions */}
+                <div className="flex gap-6">
+                  <button
+                    onClick={() => updateRequestStatus(request.id, "declined")}
+                    className="text-sm text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    onClick={() => updateRequestStatus(request.id, "accepted")}
+                    className="text-sm text-success hover:underline flex items-center gap-1"
+                  >
+                    <Check className="w-4 h-4" />
+                    Accept
+                  </button>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -329,37 +319,40 @@ export function MeetingRequestsList({
 
       {/* Pending Sent Requests */}
       {pendingSent.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <Send className="w-4 h-4" />
             Requests You Sent ({pendingSent.length})
           </h3>
-          {pendingSent.map((request) => {
+          {pendingSent.map((request, index) => {
             const target = getParticipant(request.target_id);
             if (!target) return null;
 
             return (
-              <Card key={request.id} className="bg-secondary/30 border-border">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-foreground text-base flex items-center gap-2">
-                      {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-accent" />}
+              <div 
+                key={request.id} 
+                className={`py-4 border-b border-border/20 last:border-b-0 ${
+                  index % 2 === 1 ? 'md:pl-4' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {request.is_ai_suggested && <Sparkles className="w-4 h-4 text-primary" />}
+                    <span className="text-foreground">
                       Request to {target.name}
-                    </CardTitle>
-                    <Badge className="bg-muted text-muted-foreground">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Waiting
-                    </Badge>
+                    </span>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {request.message && (
-                    <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
-                      "{request.message}"
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Waiting
+                  </span>
+                </div>
+                {request.message && (
+                  <p className="text-sm text-muted-foreground font-serif italic mt-2">
+                    "{request.message}"
+                  </p>
+                )}
+              </div>
             );
           })}
         </div>
@@ -367,22 +360,23 @@ export function MeetingRequestsList({
 
       {/* Declined (collapsed/minimal) */}
       {declinedRequests.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2 pt-4 border-t border-border/20">
           <h3 className="text-xs font-medium text-muted-foreground">
             Declined ({declinedRequests.length})
           </h3>
-          {declinedRequests.map((request) => {
-            const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
-            const otherPerson = getParticipant(otherPersonId);
-            if (!otherPerson) return null;
+          <div className="flex flex-wrap gap-2">
+            {declinedRequests.map((request) => {
+              const otherPersonId = request.requester_id === currentUserId ? request.target_id : request.requester_id;
+              const otherPerson = getParticipant(otherPersonId);
+              if (!otherPerson) return null;
 
-            return (
-              <div key={request.id} className="text-xs text-muted-foreground flex items-center gap-2 p-2 bg-secondary/20 rounded">
-                <X className="w-3 h-3" />
-                {otherPerson.name}
-              </div>
-            );
-          })}
+              return (
+                <span key={request.id} className="text-xs text-muted-foreground">
+                  {otherPerson.name}
+                </span>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

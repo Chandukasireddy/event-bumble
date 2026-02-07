@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +12,7 @@ import {
   MapPin,
   Clock,
   Search,
+  ArrowRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import { ParticipantCard } from "@/components/ParticipantCard";
 import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
 import { SparkleIcon, OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
+import { NetworkBackground } from "@/components/NetworkBackground";
 
 interface Event {
   id: string;
@@ -184,6 +185,11 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Network Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+        <NetworkBackground />
+      </div>
+
       <div className="relative z-10">
         {/* Header - minimal */}
         <header className="py-6">
@@ -219,12 +225,13 @@ export default function EventDetail() {
                   </div>
                 </div>
               </div>
+              {/* Copy Link as icon-only action */}
               <button 
                 onClick={copyShareLink} 
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                className="text-muted-foreground hover:text-foreground transition-colors p-2"
+                title="Copy registration link"
               >
                 <Copy className="w-4 h-4" />
-                Copy Link
               </button>
             </div>
           </div>
@@ -281,11 +288,15 @@ export default function EventDetail() {
                 <div className="text-center py-24">
                   <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-serif text-xl font-medium text-foreground mb-2">No participants yet</h3>
-                  <p className="text-muted-foreground mb-6">Share the registration link to get participants</p>
-                  <Button onClick={copyShareLink} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <Copy className="w-4 h-4 mr-2" />
+                  <p className="text-muted-foreground mb-8">Share the registration link to get participants</p>
+                  <button 
+                    onClick={copyShareLink} 
+                    className="text-link-cta"
+                  >
+                    <Copy className="w-5 h-5" />
                     Copy Registration Link
-                  </Button>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -300,21 +311,25 @@ export default function EventDetail() {
                     />
                   </div>
                   
-                  {/* Filtered Participants List */}
+                  {/* Filtered Participants List with alternating indents */}
                   {filteredParticipants.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       No participants found matching "{searchQuery}"
                     </div>
                   ) : (
-                    <div className="divide-y divide-border/30">
-                      {filteredParticipants.map((participant) => (
-                        <ParticipantCard
+                    <div className="space-y-0">
+                      {filteredParticipants.map((participant, index) => (
+                        <div 
                           key={participant.id}
-                          participant={participant}
-                          eventId={event.id}
-                          currentUserId={currentUser?.id}
-                          compact
-                        />
+                          className={index % 2 === 1 ? 'md:pl-6' : ''}
+                        >
+                          <ParticipantCard
+                            participant={participant}
+                            eventId={event.id}
+                            currentUserId={currentUser?.id}
+                            compact
+                          />
+                        </div>
                       ))}
                     </div>
                   )}

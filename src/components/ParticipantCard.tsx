@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Code, Palette, Briefcase, MessageSquare, ExternalLink, Check, Clock } from "lucide-react";
+import { Code, Palette, Briefcase, ExternalLink, Check, Clock, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -163,10 +162,10 @@ export function ParticipantCard({
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => window.open(participant.telegram_handle, "_blank")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <ExternalLink className="w-3 h-3" />
             </button>
@@ -184,12 +183,10 @@ export function ParticipantCard({
               ) : (
                 <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
                   <DialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="h-6 text-xs bg-primary hover:bg-primary/90 text-primary-foreground px-2"
-                    >
+                    <button className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                       Meet
-                    </Button>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
                   </DialogTrigger>
                   <DialogContent className="bg-card border-border">
                     <DialogHeader>
@@ -213,13 +210,14 @@ export function ParticipantCard({
                             className="bg-input border-border focus:border-primary"
                           />
                         </div>
-                        <Button
+                        {/* Text link CTA */}
+                        <button
                           onClick={handleRequestMeeting}
                           disabled={isSubmitting}
-                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                          className="w-full text-link-cta justify-center py-4 border-t border-border/50"
                         >
-                          {isSubmitting ? "Sending..." : "Send Request"}
-                        </Button>
+                          {isSubmitting ? "Sending..." : "Send Request →"}
+                        </button>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">
@@ -264,13 +262,13 @@ export function ParticipantCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={(e) => {
               e.stopPropagation();
               window.open(participant.telegram_handle, "_blank");
             }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <ExternalLink className="w-4 h-4" />
           </button>
@@ -289,14 +287,13 @@ export function ParticipantCard({
             ) : (
               <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
                 <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  <button
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <MessageSquare className="w-4 h-4 mr-1" />
                     Meet
-                  </Button>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
                 </DialogTrigger>
                 <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
                   <DialogHeader>
@@ -316,13 +313,14 @@ export function ParticipantCard({
                         className="bg-input border-border focus:border-primary"
                       />
                     </div>
-                    <Button
+                    {/* Text link CTA */}
+                    <button
                       onClick={handleRequestMeeting}
                       disabled={isSubmitting}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="w-full text-link-cta justify-center py-4 border-t border-border/50"
                     >
-                      {isSubmitting ? "Sending..." : "Send Request"}
-                    </Button>
+                      {isSubmitting ? "Sending..." : "Send Request →"}
+                    </button>
                   </div>
                 </DialogContent>
               </Dialog>

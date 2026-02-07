@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, MapPin } from "lucide-react";
+import { MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { SparkleIcon } from "@/components/icons/GeometricIcons";
 
 const VIBE_OPTIONS = [
   { value: "productivity", label: "⚡ Productivity & Automation" },
@@ -305,20 +305,22 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
         </div>
       </div>
 
-      <Button
+      {/* Text link CTA */}
+      <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold transition-all duration-300"
+        className="w-full text-link-cta justify-center py-4 border-t border-border/50 mt-6 disabled:opacity-50"
       >
         {isSubmitting ? (
-          "Registering..."
+          "Finding your match..."
         ) : (
           <>
-            <Send className="h-4 w-4 mr-2" />
+            <SparkleIcon className="text-primary" size={20} />
             Find My Match
+            <ArrowRight className="w-4 h-4" />
           </>
         )}
-      </Button>
+      </button>
     </form>
   );
 }
