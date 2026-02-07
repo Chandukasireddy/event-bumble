@@ -4,6 +4,8 @@ import { Zap, Code, Palette, Briefcase, ArrowRight, RefreshCw, User } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { OverlappingCirclesIcon, SparkleIcon } from "@/components/icons/GeometricIcons";
+import { MediumSparkle } from "@/components/icons/DecorativeLines";
+import { TitleSparkle } from "@/components/BoldDecorations";
 
 const ROLE_ICONS = {
   Dev: Code,
@@ -397,14 +399,20 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         </p>
       </div>
 
-      {/* Suggestions - free-flowing list */}
+      {/* Suggestions - free-flowing list with DRAMATIC zig-zag indents */}
       {filteredSuggestions.length > 0 && (
         <div className="space-y-8">
-          <h3 className="font-serif text-xl font-medium text-foreground text-center">
-            {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
-          </h3>
+          <div className="flex items-center gap-3 justify-center">
+            <MediumSparkle className="text-primary" size={28} />
+            <h3 className="font-serif text-xl font-medium text-foreground">
+              {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
+            </h3>
+          </div>
           
-          <div className="space-y-8">
+          <div className="space-y-0 relative">
+            {/* Bold vertical timeline */}
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-charcoal/25 hidden md:block" />
+            
             {filteredSuggestions.map((suggestion, index) => {
               const Icon1 = RoleIcon1(suggestion.participant1.role);
               const Icon2 = RoleIcon1(suggestion.participant2.role);
@@ -413,19 +421,26 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
               const otherPerson = currentUser 
                 ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
                 : null;
+              
+              // Dramatic zig-zag indent pattern
+              const indentPattern = [24, 100, 48, 80, 32, 96];
+              const indent = indentPattern[index % indentPattern.length];
 
               return (
                 <div 
                   key={index} 
-                  className={`py-6 border-b border-border/30 last:border-b-0 ${
-                    index % 2 === 1 ? 'md:pl-10' : ''
-                  }`}
+                  className="py-8 border-b border-border/30 last:border-b-0 relative"
+                  style={{ paddingLeft: `${indent}px` }}
                 >
+                  {/* Timeline node */}
+                  <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[5px] w-[11px] h-[11px] rounded-full border-2 border-charcoal/30 bg-background" />
+                  
                   {isYourMatch && otherPerson ? (
                     // Personalized view
                     <div className="flex flex-col md:flex-row md:items-start gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
+                          <TitleSparkle className="text-primary flex-shrink-0" size={18} />
                           <Icon2 className="w-5 h-5 text-primary" />
                           <span className="font-serif text-lg font-medium text-foreground">
                             {otherPerson.name}

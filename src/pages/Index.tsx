@@ -7,13 +7,20 @@ import {
   SparkleIcon 
 } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
-import { CornerBracket, CornerBracketFlipped } from "@/components/icons/DecorativeLines";
+import { CornerBracket, CornerBracketFlipped, MediumSparkle } from "@/components/icons/DecorativeLines";
+import { 
+  LargeSparkle, 
+  OrbitalDecoration, 
+  NetworkCluster, 
+  CircleDivider,
+  FeatureConnector 
+} from "@/components/BoldDecorations";
 
 export default function Index() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Network Background - subtle, fixed */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.10]">
+      {/* Network Background - BOLD 25% opacity */}
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.25]">
         <NetworkBackground />
       </div>
 
@@ -37,18 +44,30 @@ export default function Index() {
           </div>
         </header>
 
-        {/* Hero Section - with corner bracket decoration */}
+        {/* Hero Section - with BOLD decorations */}
         <main className="flex-1 container mx-auto px-6 md:px-12 py-16 md:py-24">
-          <div className="relative max-w-3xl mx-auto text-center mb-40 md:mb-56">
-            {/* Decorative corner bracket - top right */}
+          <div className="relative max-w-3xl mx-auto text-center mb-48 md:mb-72">
+            {/* Large corner bracket - top left - 150px */}
             <CornerBracket 
-              className="hidden md:block absolute -top-8 -right-16 text-charcoal rotate-90" 
-              size={80} 
+              className="hidden md:block absolute -top-12 -left-8 text-charcoal" 
+              size={150} 
+            />
+            
+            {/* Large sparkle - top right - GOLD, 120px */}
+            <LargeSparkle 
+              className="hidden md:block absolute -top-8 right-0 text-primary" 
+              size={120} 
+            />
+            
+            {/* Orbital decoration - right side background */}
+            <OrbitalDecoration 
+              className="hidden lg:block absolute -right-32 top-8 text-charcoal" 
+              size={350} 
             />
             
             <h1 className="font-serif text-5xl md:text-7xl font-medium text-foreground mb-8 leading-[1.1]">
               Make Networking<br />
-              <em className="text-primary">Actually Work</em>
+              <em className="text-primary text-hero-emphasis">Actually Work</em>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-xl mx-auto leading-relaxed">
               AI-powered matching platform that connects the right people at your events. 
@@ -74,13 +93,32 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Features - asymmetric staggered layout with enhanced diagonal flow */}
-          <div className="max-w-5xl mx-auto mb-40 md:mb-56">
-            <div className="relative space-y-16 md:space-y-0 md:min-h-[520px]">
-              {/* Feature 1 - offset left */}
-              <div className="md:absolute md:left-[10%] md:top-0 text-center md:text-left md:max-w-xs">
-                <LayeredDiamondsIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={56} />
-                <h3 className="font-serif text-xl font-medium text-foreground mb-3">
+          {/* Features - DRAMATIC asymmetric staggered layout with connecting lines */}
+          <div className="max-w-5xl mx-auto mb-48 md:mb-72">
+            <div className="relative space-y-16 md:space-y-0 md:min-h-[580px]">
+              {/* Feature connecting line - visible on desktop */}
+              <FeatureConnector className="hidden md:block text-primary" />
+              
+              {/* Network cluster decoration - floating right */}
+              <NetworkCluster 
+                className="hidden md:block absolute right-[5%] top-[40%] text-charcoal" 
+                size={100} 
+              />
+              
+              {/* Scattered sparkles for depth */}
+              <MediumSparkle 
+                className="hidden md:block absolute left-[30%] top-[120px] text-primary" 
+                size={32} 
+              />
+              <MediumSparkle 
+                className="hidden md:block absolute right-[25%] top-[350px] text-charcoal" 
+                size={28} 
+              />
+
+              {/* Feature 1 - FAR LEFT, top */}
+              <div className="md:absolute md:left-[8%] md:top-0 text-center md:text-left md:max-w-xs">
+                <LayeredDiamondsIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={64} />
+                <h3 className="text-section-header text-foreground mb-3">
                   Shareable Forms
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -89,10 +127,10 @@ export default function Index() {
                 </p>
               </div>
 
-              {/* Feature 2 - center-right, significantly lower */}
-              <div className="md:absolute md:left-[45%] md:top-[200px] text-center md:text-left md:max-w-xs">
-                <OverlappingCirclesIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={56} />
-                <h3 className="font-serif text-xl font-medium text-foreground mb-3">
+              {/* Feature 2 - CENTER-RIGHT, significantly LOWER (220px) - LARGEST icon */}
+              <div className="md:absolute md:left-[48%] md:top-[220px] text-center md:text-left md:max-w-xs">
+                <OverlappingCirclesIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={80} />
+                <h3 className="text-section-header text-foreground mb-3">
                   AI Matching
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -101,10 +139,10 @@ export default function Index() {
                 </p>
               </div>
 
-              {/* Feature 3 - right, middle height */}
-              <div className="md:absolute md:left-[70%] md:top-[80px] text-center md:text-left md:max-w-xs">
+              {/* Feature 3 - RIGHT, middle height (100px) - smallest icon */}
+              <div className="md:absolute md:left-[72%] md:top-[100px] text-center md:text-left md:max-w-xs">
                 <SunburstIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={56} />
-                <h3 className="font-serif text-xl font-medium text-foreground mb-3">
+                <h3 className="text-section-header text-foreground mb-3">
                   Meeting Requests
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -115,11 +153,19 @@ export default function Index() {
             </div>
           </div>
 
+          {/* Circle divider between sections */}
+          <div className="flex justify-center mb-20 md:mb-32">
+            <CircleDivider className="text-primary" width={280} />
+          </div>
+
           {/* How It Works - minimal list with asymmetric divider */}
-          <div className="max-w-lg mx-auto md:ml-[15%] md:mr-auto">
-            <h2 className="font-serif text-2xl md:text-3xl font-medium text-foreground mb-12">
-              How It Works
-            </h2>
+          <div className="max-w-lg mx-auto md:ml-[15%] md:mr-auto mb-24">
+            <div className="flex items-center gap-4 mb-12">
+              <MediumSparkle className="text-primary" size={32} />
+              <h2 className="font-serif text-2xl md:text-3xl font-medium text-foreground">
+                How It Works
+              </h2>
+            </div>
             <div className="space-y-10">
               <div className="flex gap-6 items-start">
                 <span className="text-sm font-medium text-primary w-6 flex-shrink-0">01</span>
@@ -153,11 +199,11 @@ export default function Index() {
           </div>
         </main>
 
-        {/* Footer - minimal with decorative bracket */}
+        {/* Footer - minimal with large decorative bracket */}
         <footer className="py-8 relative">
           <CornerBracketFlipped 
             className="hidden md:block absolute bottom-4 right-12 text-charcoal" 
-            size={60} 
+            size={100} 
           />
           <div className="container mx-auto px-6 md:px-12 text-center">
             <p className="text-xs text-muted-foreground">

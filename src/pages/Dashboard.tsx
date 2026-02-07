@@ -17,7 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SparkleIcon } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
-import { CornerBracket, SectionDivider } from "@/components/icons/DecorativeLines";
+import { CornerBracket, SectionDivider, MediumSparkle } from "@/components/icons/DecorativeLines";
+import { LargeBracket, TitleSparkle, NetworkCluster } from "@/components/BoldDecorations";
 
 interface Event {
   id: string;
@@ -134,10 +135,16 @@ export default function Dashboard() {
     });
   };
 
+  // Dramatic zig-zag indent pattern for events
+  const getEventIndent = (index: number) => {
+    const pattern = [24, 120, 48, 100, 32, 96];
+    return pattern[index % pattern.length];
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Network Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.12]">
+      {/* Network Background - BOLD 25% opacity */}
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.25]">
         <NetworkBackground />
       </div>
 
@@ -241,15 +248,23 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="container mx-auto px-6 md:px-12 py-12">
-          <div className="mb-12 relative">
-            {/* Decorative corner bracket */}
-            <CornerBracket 
-              className="hidden md:block absolute -top-4 -right-4 text-charcoal rotate-90" 
-              size={60} 
+          <div className="mb-16 relative">
+            {/* LARGE decorative corner bracket - 150px */}
+            <LargeBracket 
+              className="hidden md:block absolute -top-8 -right-4 text-charcoal rotate-90" 
+              size={150} 
             />
-            <h1 className="font-serif text-3xl md:text-4xl font-medium text-foreground mb-2">Your Events</h1>
-            <p className="text-muted-foreground">Manage events and share registration links</p>
-            <SectionDivider className="mt-8" />
+            {/* Network cluster decoration */}
+            <NetworkCluster 
+              className="hidden lg:block absolute right-32 top-4 text-charcoal" 
+              size={80} 
+            />
+            <div className="flex items-center gap-4 mb-2">
+              <MediumSparkle className="text-primary" size={32} />
+              <h1 className="font-serif text-3xl md:text-4xl font-medium text-foreground">Your Events</h1>
+            </div>
+            <p className="text-muted-foreground ml-12">Manage events and share registration links</p>
+            <SectionDivider className="mt-10" />
           </div>
 
           {isLoading ? (
@@ -272,22 +287,23 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-0">
-              {/* Vertical timeline indicator with nodes */}
+              {/* BOLD vertical timeline - 3px, 30% opacity */}
               <div className="relative">
-                <div className="absolute left-0 top-0 bottom-0 w-px bg-border/30 hidden md:block" />
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-charcoal/30 hidden md:block" />
                 
                 {events.map((event, index) => (
                   <div 
                     key={event.id} 
-                    className={`py-8 border-b border-border/30 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8 relative ${
-                      index % 2 === 0 ? 'md:pl-8' : 'md:pl-16'
-                    }`}
+                    className="py-10 border-b border-border/30 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8 relative"
+                    style={{ paddingLeft: `${getEventIndent(index)}px` }}
                   >
-                    {/* Timeline node */}
-                    <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[3px] w-[7px] h-[7px] rounded-full border border-border/50 bg-background" />
-                    {/* Event info */}
+                    {/* Timeline node - larger */}
+                    <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[5px] w-[11px] h-[11px] rounded-full border-2 border-charcoal/40 bg-background" />
+                    
+                    {/* Event info with sparkle */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
+                        <TitleSparkle className="text-primary flex-shrink-0" size={20} />
                         <h2 className="font-serif text-xl font-medium text-foreground">{event.name}</h2>
                         <span className="text-xs text-success flex items-center gap-1">
                           <Users className="w-3 h-3" />
@@ -295,9 +311,9 @@ export default function Dashboard() {
                         </span>
                       </div>
                       {event.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{event.description}</p>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-1 ml-8">{event.description}</p>
                       )}
-                      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground ml-8">
                         {event.event_date && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -314,7 +330,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Actions - text links only */}
-                    <div className="flex gap-4 items-center">
+                    <div className="flex gap-4 items-center ml-8 md:ml-0">
                       <button
                         onClick={() => copyShareLink(event.share_code)}
                         className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
