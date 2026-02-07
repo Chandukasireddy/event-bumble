@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Zap, Code, Palette, Briefcase, ArrowRight, RefreshCw, User } from "lucide-react";
+import { Zap, Code, Palette, Briefcase, ArrowRight, RefreshCw, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
 
 const ROLE_ICONS = {
   Dev: Code,
@@ -117,13 +117,11 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
   }, [eventId, currentUser?.id]);
   
   // Initialize state from localStorage
-  // Initialize state from localStorage
   const [suggestions, setSuggestions] = useState<MatchSuggestion[]>(() => {
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Re-hydrate participant references
         return parsed.map((s: any) => ({
           ...s,
           participant1: participants.find(p => p.id === s.participant1Id) || s.participant1,
@@ -158,8 +156,6 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
     }
   }, [suggestions, storageKey]);
 
-  // Removed auto-generate - only generate on user click
-
   const generateMatches = async () => {
     // Filter out participants we already have requests with
     const availableParticipants = participants.filter(
@@ -187,12 +183,10 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
     setIsLoading(true);
 
     try {
-      // If we have a current user, generate matches specifically for them
       const targetUser = currentUser 
         ? participants.find(p => p.id === currentUser.id) || { ...currentUser, telegram_handle: "" }
         : null;
 
-      // Only send available participants to AI (exclude already requested)
       const participantsForAI = currentUser 
         ? [participants.find(p => p.id === currentUser.id), ...availableParticipants].filter(Boolean)
         : participants;
@@ -227,7 +221,6 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
           })
         ).filter((s: MatchSuggestion) => s.participant1 && s.participant2);
 
-        // If current user exists, prioritize their matches
         if (currentUser) {
           mappedSuggestions = mappedSuggestions.sort((a, b) => {
             const aHasUser = a.participant1.id === currentUser.id || a.participant2.id === currentUser.id;
@@ -247,7 +240,6 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
       }
     } catch (error) {
       console.error("Error generating matches:", error);
-      // Fallback to fun random matches if AI fails
       if (currentUser && participants.length >= 2) {
         const fallbackMatches = generateFallbackMatches();
         if (fallbackMatches.length > 0) {
@@ -270,11 +262,9 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
     }
   };
 
-  // Generate fun fallback matches when AI is unavailable
   const generateFallbackMatches = (): MatchSuggestion[] => {
     if (!currentUser) return [];
     
-    // Filter out participants we already have requests with
     const otherParticipants = participants.filter(
       p => p.id !== currentUser.id && !existingRequestIds.has(p.id)
     );
@@ -288,7 +278,6 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
       "Every great partnership starts with a simple hello! 👋",
     ];
 
-    // Shuffle and pick up to 3 random participants
     const shuffled = [...otherParticipants].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(3, shuffled.length));
 
@@ -322,7 +311,6 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         description: `Sent to ${suggestion.participant1.name} and ${suggestion.participant2.name}`,
       });
 
-      // Remove from suggestions and update storage
       const newSuggestions = suggestions.filter((s) => s !== suggestion);
       setSuggestions(newSuggestions);
       if (newSuggestions.length === 0) {
@@ -338,217 +326,175 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
 
   const RoleIcon1 = (role: string) => ROLE_ICONS[role as keyof typeof ROLE_ICONS] || Code;
 
+  const filteredSuggestions = suggestions.filter(s => {
+    if (!currentUser) return true;
+    const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+    return !existingRequestIds.has(otherPersonId);
+  });
+
   return (
-    <div className="space-y-6">
-      {/* Personalized Greeting */}
+    <div className="space-y-12">
+      {/* Personalized Greeting - minimal */}
       {currentUser && (
-        <Card className="bg-card border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                <User className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-serif text-lg font-medium text-foreground">
-                  Welcome, {currentUser.name}! 👋
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Let's find you some great connections based on your interests
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Generate Button */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="font-serif text-foreground flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            AI-Powered Matching
-          </CardTitle>
-          <CardDescription>
-            {currentUser 
-              ? `Finding the best people for you to meet at this event`
-              : `Let AI analyze participant profiles and suggest optimal networking pairs`
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={generateMatches}
-            disabled={isLoading || participants.length < 2}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold"
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Finding your matches...
-              </>
-            ) : hasGenerated ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Find More Matches
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 mr-2" />
-                {currentUser ? "Find My Matches" : "Generate AI Matches"}
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            {currentUser 
-              ? `${participants.filter(p => p.id !== currentUser.id && !existingRequestIds.has(p.id)).length} people available to connect with`
-              : `${participants.length} participants available for matching`
-            }
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Suggestions - filter out already requested */}
-      {suggestions.filter(s => {
-        if (!currentUser) return true;
-        const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
-        return !existingRequestIds.has(otherPersonId);
-      }).length > 0 && (
-        <div className="space-y-4">
-        <h3 className="font-serif text-lg font-medium text-foreground">
-          {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
-        </h3>
-        {suggestions.filter(s => {
-          if (!currentUser) return true;
-            const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
-            return !existingRequestIds.has(otherPersonId);
-          }).map((suggestion, index) => {
-            const Icon1 = RoleIcon1(suggestion.participant1.role);
-            const Icon2 = RoleIcon1(suggestion.participant2.role);
-            const isYourMatch = currentUser && 
-              (suggestion.participant1.id === currentUser.id || suggestion.participant2.id === currentUser.id);
-            const otherPerson = currentUser 
-              ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
-              : null;
-
-            return (
-              <Card key={index} className={`bg-card border-border hover:border-primary/50 transition-colors ${isYourMatch ? 'ring-1 ring-primary/30' : ''}`}>
-                <CardContent className="pt-6">
-                  {isYourMatch && otherPerson ? (
-                    // Personalized view for current user
-                    <div className="mb-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                          <Icon2 className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <span className="font-sans font-semibold text-foreground text-lg">{otherPerson.name}</span>
-                          <Badge className="bg-success/10 text-success border border-success/20 text-xs ml-2">
-                            {Math.round(suggestion.compatibility_score * 100)}% match
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {otherPerson.superpower && (
-                          <Badge className="text-xs bg-primary/10 text-primary border border-primary/20">
-                            {SUPERPOWER_LABELS[otherPerson.superpower] || otherPerson.superpower}
-                          </Badge>
-                        )}
-                        {otherPerson.vibe && (
-                          <Badge className="text-xs bg-secondary text-muted-foreground border border-border">
-                            {VIBE_LABELS[otherPerson.vibe] || otherPerson.vibe}
-                          </Badge>
-                        )}
-                      </div>
-                      {otherPerson.bio && (
-                        <p className="text-sm text-muted-foreground font-serif italic mb-3">"{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"</p>
-                      )}
-                    </div>
-                  ) : (
-                    // Standard view for non-personalized matches
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Icon1 className="w-4 h-4 text-primary" />
-                          <span className="font-medium text-foreground">{suggestion.participant1.name}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {SUPERPOWER_LABELS[suggestion.participant1.superpower || ''] || suggestion.participant1.role}
-                          </Badge>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                        <div className="flex items-center gap-2">
-                          <Icon2 className="w-4 h-4 text-primary" />
-                          <span className="font-medium text-foreground">{suggestion.participant2.name}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {SUPERPOWER_LABELS[suggestion.participant2.superpower || ''] || suggestion.participant2.role}
-                          </Badge>
-                        </div>
-                      </div>
-                      <Badge className="bg-success/10 text-success border border-success/20">
-                        {Math.round(suggestion.compatibility_score * 100)}% match
-                      </Badge>
-                    </div>
-                  )}
-
-                  <p className="text-sm text-muted-foreground mb-4 bg-secondary p-3 rounded border border-border">
-                    <Sparkles className="w-4 h-4 inline mr-2 text-primary" />
-                    {suggestion.reason}
-                  </p>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-border hover:border-primary"
-                      onClick={() => {
-                        const newSuggestions = suggestions.filter((s) => s !== suggestion);
-                        setSuggestions(newSuggestions);
-                        if (newSuggestions.length === 0) {
-                          localStorage.removeItem(storageKey);
-                        }
-                      }}
-                    >
-                      Dismiss
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-                      onClick={() => createMeetingFromSuggestion(suggestion)}
-                    >
-                      {isYourMatch ? "Request to Meet" : "Create Meeting Request"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-serif text-xl font-medium text-foreground">
+              Welcome, {currentUser.name}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Let's find you some great connections
+            </p>
+          </div>
         </div>
       )}
 
-      {hasGenerated && suggestions.filter(s => {
-        if (!currentUser) return true;
-        const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
-        return !existingRequestIds.has(otherPersonId);
-      }).length === 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            <Sparkles className="w-8 h-8 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">
-              {participants.filter(p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)).length === 0
-                ? "You've connected with everyone! 🎉"
-                : "All suggestions have been used or dismissed"
-              }
-            </p>
-            {participants.filter(p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)).length > 0 && (
-              <Button
-                variant="link"
-                onClick={generateMatches}
-                className="text-primary mt-2"
-              >
-                Generate new matches
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+      {/* Generate Button - clean section */}
+      <div className="text-center py-8">
+        <OverlappingCirclesIcon className="text-charcoal mx-auto mb-6" size={48} />
+        <h2 className="font-serif text-2xl font-medium text-foreground mb-2">
+          AI-Powered Matching
+        </h2>
+        <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
+          {currentUser 
+            ? `Finding the best people for you to meet at this event`
+            : `Let AI analyze participant profiles and suggest optimal networking pairs`
+          }
+        </p>
+        <Button
+          onClick={generateMatches}
+          disabled={isLoading || participants.length < 2}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+        >
+          {isLoading ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              Finding your matches...
+            </>
+          ) : hasGenerated ? (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Find More Matches
+            </>
+          ) : (
+            <>
+              <Zap className="w-4 h-4 mr-2" />
+              {currentUser ? "Find My Matches" : "Generate AI Matches"}
+            </>
+          )}
+        </Button>
+        <p className="text-xs text-muted-foreground mt-3">
+          {currentUser 
+            ? `${participants.filter(p => p.id !== currentUser.id && !existingRequestIds.has(p.id)).length} people available`
+            : `${participants.length} participants`
+          }
+        </p>
+      </div>
+
+      {/* Suggestions - free-flowing list */}
+      {filteredSuggestions.length > 0 && (
+        <div className="space-y-8">
+          <h3 className="font-serif text-xl font-medium text-foreground text-center">
+            {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
+          </h3>
+          
+          <div className="space-y-6">
+            {filteredSuggestions.map((suggestion, index) => {
+              const Icon1 = RoleIcon1(suggestion.participant1.role);
+              const Icon2 = RoleIcon1(suggestion.participant2.role);
+              const isYourMatch = currentUser && 
+                (suggestion.participant1.id === currentUser.id || suggestion.participant2.id === currentUser.id);
+              const otherPerson = currentUser 
+                ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
+                : null;
+
+              return (
+                <div 
+                  key={index} 
+                  className="py-6 border-b border-border/30 last:border-b-0"
+                >
+                  {isYourMatch && otherPerson ? (
+                    // Personalized view
+                    <div className="flex flex-col md:flex-row md:items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Icon2 className="w-5 h-5 text-primary" />
+                          <span className="font-serif text-lg font-medium text-foreground">
+                            {otherPerson.name}
+                          </span>
+                          <span className="text-xs font-medium text-success">
+                            {Math.round(suggestion.compatibility_score * 100)}% match
+                          </span>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {otherPerson.superpower && (
+                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                              {SUPERPOWER_LABELS[otherPerson.superpower] || otherPerson.superpower}
+                            </Badge>
+                          )}
+                          {otherPerson.vibe && (
+                            <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+                              {VIBE_LABELS[otherPerson.vibe] || otherPerson.vibe}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {otherPerson.bio && (
+                          <p className="text-sm text-muted-foreground font-serif italic mb-3">
+                            "{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"
+                          </p>
+                        )}
+                        
+                        <p className="text-sm text-muted-foreground">
+                          {suggestion.reason}
+                        </p>
+                      </div>
+                      
+                      <Button
+                        onClick={() => createMeetingFromSuggestion(suggestion)}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      >
+                        Request to Meet
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  ) : (
+                    // Standard view
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon1 className="w-4 h-4 text-primary" />
+                          <span className="font-medium text-foreground">{suggestion.participant1.name}</span>
+                          <span className="text-muted-foreground">×</span>
+                          <Icon2 className="w-4 h-4 text-primary" />
+                          <span className="font-medium text-foreground">{suggestion.participant2.name}</span>
+                          <span className="text-xs font-medium text-success ml-2">
+                            {Math.round(suggestion.compatibility_score * 100)}%
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground font-serif italic">
+                          "{suggestion.reason}"
+                        </p>
+                      </div>
+                      
+                      <Button
+                        onClick={() => createMeetingFromSuggestion(suggestion)}
+                        variant="outline"
+                        size="sm"
+                        className="border-border hover:border-primary"
+                      >
+                        Create Meeting
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );

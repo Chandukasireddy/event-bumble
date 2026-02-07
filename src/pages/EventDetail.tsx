@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Sparkles,
   ArrowLeft,
   Users,
-  Code,
-  Palette,
-  Briefcase,
   MessageSquare,
   Copy,
   Calendar,
@@ -25,6 +20,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { ParticipantCard } from "@/components/ParticipantCard";
 import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
+import { SparkleIcon, OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
 
 interface Event {
   id: string;
@@ -51,12 +47,6 @@ interface Participant {
   bio?: string;
   how_to_find_me?: string;
 }
-
-const ROLE_ICONS = {
-  Dev: Code,
-  Designer: Palette,
-  Business: Briefcase,
-};
 
 interface CurrentUser {
   id: string;
@@ -172,41 +162,44 @@ export default function EventDetail() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <h2 className="font-serif text-xl font-medium text-foreground mb-4">Event not found</h2>
-        <Button asChild variant="outline">
-          <Link to="/dashboard">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Link>
-        </Button>
+        <Link 
+          to="/dashboard"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Link>
       </div>
     );
   }
 
+  const filteredParticipants = participants.filter((p) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(query) ||
+      p.role.toLowerCase().includes(query) ||
+      p.interests.some((i) => i.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Subtle background accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
-      </div>
-
       <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-border backdrop-blur-sm bg-background/80">
-          <div className="container mx-auto px-4 py-4">
+        {/* Header - minimal */}
+        <header className="py-6">
+          <div className="container mx-auto px-6 md:px-12">
             <div className="flex items-center gap-4">
-              <Button asChild variant="ghost" size="icon">
-                <Link to="/dashboard">
-                  <ArrowLeft className="w-5 h-5" />
-                </Link>
-              </Button>
+              <Link 
+                to="/dashboard"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
               <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded flex items-center justify-center bg-primary/10 border border-primary/20">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
+                <SparkleIcon className="text-primary" size={24} />
                 <div className="flex-1">
-                  <h1 className="font-serif font-semibold text-lg text-foreground">{event.name}</h1>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <h1 className="font-serif text-xl font-medium text-foreground">{event.name}</h1>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                     {event.event_date && (
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
@@ -226,42 +219,54 @@ export default function EventDetail() {
                   </div>
                 </div>
               </div>
-              <Button onClick={copyShareLink} variant="outline" className="border-border hover:border-primary">
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Registration Link
-              </Button>
+              <button 
+                onClick={copyShareLink} 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                <Copy className="w-4 h-4" />
+                Copy Link
+              </button>
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="ai-match" className="space-y-6">
-            <TabsList className="bg-secondary">
-              <TabsTrigger value="ai-match" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <Sparkles className="w-4 h-4 mr-2" />
+        <main className="container mx-auto px-6 md:px-12 py-8">
+          <Tabs defaultValue="ai-match" className="space-y-8">
+            <TabsList className="bg-transparent border-b border-border/50 rounded-none w-full justify-start gap-6 p-0 h-auto">
+              <TabsTrigger 
+                value="ai-match" 
+                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground"
+              >
+                <OverlappingCirclesIcon className="w-4 h-4 mr-2" size={16} />
                 AI Matching
               </TabsTrigger>
-              <TabsTrigger value="meetings" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary relative">
+              <TabsTrigger 
+                value="meetings" 
+                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground relative"
+              >
                 <MessageSquare className="w-4 h-4 mr-2" />
-                Meeting Requests
+                Requests
                 {(unreadCounts.pendingRequests + unreadCounts.unreadMessages) > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-3 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                     {unreadCounts.pendingRequests + unreadCounts.unreadMessages}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="participants" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+              <TabsTrigger 
+                value="participants" 
+                className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground"
+              >
                 <Users className="w-4 h-4 mr-2" />
                 Participants ({participants.length})
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="ai-match">
+            <TabsContent value="ai-match" className="mt-8">
               <AIMatchingPanel eventId={event.id} participants={participants} currentUser={currentUser} />
             </TabsContent>
 
-            <TabsContent value="meetings">
+            <TabsContent value="meetings" className="mt-8">
               <MeetingRequestsList 
                 eventId={event.id} 
                 participants={participants} 
@@ -271,65 +276,48 @@ export default function EventDetail() {
               />
             </TabsContent>
 
-            <TabsContent value="participants">
+            <TabsContent value="participants" className="mt-8">
               {participants.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <Users className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No participants yet</h3>
-                    <p className="text-muted-foreground mb-4">Share the registration link to get participants</p>
-                    <Button onClick={copyShareLink} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Registration Link
-                    </Button>
-                  </CardContent>
-                </Card>
+                <div className="text-center py-24">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-serif text-xl font-medium text-foreground mb-2">No participants yet</h3>
+                  <p className="text-muted-foreground mb-6">Share the registration link to get participants</p>
+                  <Button onClick={copyShareLink} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Registration Link
+                  </Button>
+                </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Search Input */}
-                  <div className="relative">
+                  <div className="relative max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Search by name, role, or interests..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-input border-border focus:border-primary"
+                      className="pl-10 bg-transparent border-border focus:border-primary"
                     />
                   </div>
                   
-                  {/* Filtered Participants Grid */}
-                  {(() => {
-                    const filteredParticipants = participants.filter((p) => {
-                      const query = searchQuery.toLowerCase();
-                      return (
-                        p.name.toLowerCase().includes(query) ||
-                        p.role.toLowerCase().includes(query) ||
-                        p.interests.some((i) => i.toLowerCase().includes(query))
-                      );
-                    });
-                    
-                    if (filteredParticipants.length === 0) {
-                      return (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No participants found matching "{searchQuery}"
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                        {filteredParticipants.map((participant) => (
-                          <ParticipantCard
-                            key={participant.id}
-                            participant={participant}
-                            eventId={event.id}
-                            currentUserId={currentUser?.id}
-                            compact
-                          />
-                        ))}
-                      </div>
-                    );
-                  })()}
+                  {/* Filtered Participants List */}
+                  {filteredParticipants.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      No participants found matching "{searchQuery}"
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/30">
+                      {filteredParticipants.map((participant) => (
+                        <ParticipantCard
+                          key={participant.id}
+                          participant={participant}
+                          eventId={event.id}
+                          currentUserId={currentUser?.id}
+                          compact
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
