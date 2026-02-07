@@ -22,6 +22,7 @@ import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
 import { SparkleIcon, OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
+import { CornerBracketFlipped, SparkleAccent } from "@/components/icons/DecorativeLines";
 
 interface Event {
   id: string;
@@ -186,7 +187,7 @@ export default function EventDetail() {
   return (
     <div className="min-h-screen bg-background">
       {/* Network Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.12]">
         <NetworkBackground />
       </div>
 
@@ -203,6 +204,7 @@ export default function EventDetail() {
               </Link>
               <div className="flex items-center gap-3 flex-1">
                 <SparkleIcon className="text-primary" size={24} />
+                <SparkleAccent className="text-primary hidden md:block" size={12} />
                 <div className="flex-1">
                   <h1 className="font-serif text-xl font-medium text-foreground">{event.name}</h1>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
@@ -238,7 +240,12 @@ export default function EventDetail() {
         </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-6 md:px-12 py-8">
+        <main className="container mx-auto px-6 md:px-12 py-8 relative">
+          {/* Decorative corner bracket */}
+          <CornerBracketFlipped 
+            className="hidden md:block absolute bottom-4 right-4 text-charcoal" 
+            size={60} 
+          />
           <Tabs defaultValue="ai-match" className="space-y-8">
             <TabsList className="bg-transparent border-b border-border/50 rounded-none w-full justify-start gap-6 p-0 h-auto">
               <TabsTrigger 
@@ -321,7 +328,7 @@ export default function EventDetail() {
                       {filteredParticipants.map((participant, index) => (
                         <div 
                           key={participant.id}
-                          className={index % 2 === 1 ? 'md:pl-6' : ''}
+                          className={index % 2 === 1 ? 'md:pl-10' : ''}
                         >
                           <ParticipantCard
                             participant={participant}
