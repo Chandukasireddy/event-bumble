@@ -342,14 +342,14 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
     <div className="space-y-6">
       {/* Personalized Greeting */}
       {currentUser && (
-        <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+        <Card className="bg-card border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                 <User className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="font-serif text-lg font-medium text-foreground">
                   Welcome, {currentUser.name}! 👋
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -362,10 +362,10 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
       )}
 
       {/* Generate Button */}
-      <Card className="bg-card/50 border-border">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
+          <CardTitle className="font-serif text-foreground flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
             AI-Powered Matching
           </CardTitle>
           <CardDescription>
@@ -379,7 +379,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
           <Button
             onClick={generateMatches}
             disabled={isLoading || participants.length < 2}
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground glow-green"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold"
           >
             {isLoading ? (
               <>
@@ -414,11 +414,11 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         return !existingRequestIds.has(otherPersonId);
       }).length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground">
-            {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
-          </h3>
-          {suggestions.filter(s => {
-            if (!currentUser) return true;
+        <h3 className="font-serif text-lg font-medium text-foreground">
+          {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
+        </h3>
+        {suggestions.filter(s => {
+          if (!currentUser) return true;
             const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
             return !existingRequestIds.has(otherPersonId);
           }).map((suggestion, index) => {
@@ -431,36 +431,36 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
               : null;
 
             return (
-              <Card key={index} className={`bg-card/50 border-border hover:border-accent/50 transition-colors ${isYourMatch ? 'ring-1 ring-primary/30' : ''}`}>
+              <Card key={index} className={`bg-card border-border hover:border-primary/50 transition-colors ${isYourMatch ? 'ring-1 ring-primary/30' : ''}`}>
                 <CardContent className="pt-6">
                   {isYourMatch && otherPerson ? (
                     // Personalized view for current user
                     <div className="mb-4">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                           <Icon2 className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <span className="font-semibold text-foreground text-lg">{otherPerson.name}</span>
-                          <Badge className="bg-accent/20 text-accent text-xs">
+                          <span className="font-sans font-semibold text-foreground text-lg">{otherPerson.name}</span>
+                          <Badge className="bg-success/10 text-success border border-success/20 text-xs ml-2">
                             {Math.round(suggestion.compatibility_score * 100)}% match
                           </Badge>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-1 mb-3">
                         {otherPerson.superpower && (
-                          <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                          <Badge className="text-xs bg-primary/10 text-primary border border-primary/20">
                             {SUPERPOWER_LABELS[otherPerson.superpower] || otherPerson.superpower}
                           </Badge>
                         )}
                         {otherPerson.vibe && (
-                          <Badge variant="secondary" className="text-xs bg-secondary/50">
+                          <Badge className="text-xs bg-secondary text-muted-foreground border border-border">
                             {VIBE_LABELS[otherPerson.vibe] || otherPerson.vibe}
                           </Badge>
                         )}
                       </div>
                       {otherPerson.bio && (
-                        <p className="text-sm text-muted-foreground italic mb-3">"{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"</p>
+                        <p className="text-sm text-muted-foreground font-serif italic mb-3">"{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"</p>
                       )}
                     </div>
                   ) : (
@@ -483,14 +483,14 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                           </Badge>
                         </div>
                       </div>
-                      <Badge className="bg-accent/20 text-accent">
+                      <Badge className="bg-success/10 text-success border border-success/20">
                         {Math.round(suggestion.compatibility_score * 100)}% match
                       </Badge>
                     </div>
                   )}
 
-                  <p className="text-sm text-muted-foreground mb-4 bg-secondary/50 p-3 rounded-lg">
-                    <Sparkles className="w-4 h-4 inline mr-2 text-accent" />
+                  <p className="text-sm text-muted-foreground mb-4 bg-secondary p-3 rounded border border-border">
+                    <Sparkles className="w-4 h-4 inline mr-2 text-primary" />
                     {suggestion.reason}
                   </p>
 
@@ -498,7 +498,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 border-muted-foreground/30"
+                      className="flex-1 border-border hover:border-primary"
                       onClick={() => {
                         const newSuggestions = suggestions.filter((s) => s !== suggestion);
                         setSuggestions(newSuggestions);
@@ -511,7 +511,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                     </Button>
                     <Button
                       size="sm"
-                      className="flex-1 bg-primary hover:bg-primary/90"
+                      className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                       onClick={() => createMeetingFromSuggestion(suggestion)}
                     >
                       {isYourMatch ? "Request to Meet" : "Create Meeting Request"}
@@ -529,7 +529,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
         return !existingRequestIds.has(otherPersonId);
       }).length === 0 && (
-        <Card className="bg-card/50 border-border">
+        <Card className="bg-card border-border">
           <CardContent className="flex flex-col items-center justify-center py-8">
             <Sparkles className="w-8 h-8 text-muted-foreground mb-3" />
             <p className="text-muted-foreground">

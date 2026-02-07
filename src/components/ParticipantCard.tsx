@@ -137,7 +137,7 @@ export function ParticipantCard({
     const isMe = currentUserId === participant.id;
     
     return (
-      <Card className="bg-card/50 border-border">
+      <Card className="bg-card border-border hover:border-primary/50 transition-colors">
         <CardHeader className="pb-2 pt-3 px-3">
           <div className="flex items-center gap-2">
             <RoleIcon className="w-4 h-4 text-primary flex-shrink-0" />
@@ -148,7 +148,7 @@ export function ParticipantCard({
           </div>
         </CardHeader>
         <CardContent className="px-3 pb-3 pt-0 space-y-2">
-          <Badge variant="secondary" className="bg-primary/20 text-primary text-xs">
+          <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs">
             {participant.role}
           </Badge>
           <div className="flex flex-wrap gap-1">
@@ -156,7 +156,7 @@ export function ParticipantCard({
               <Badge
                 key={`${interest}-${index}`}
                 variant="outline"
-                className="text-[10px] px-1.5 py-0 border-muted-foreground/30"
+                className="text-[10px] px-1.5 py-0 border-primary/30 text-primary"
               >
                 {interest}
               </Badge>
@@ -169,7 +169,7 @@ export function ParticipantCard({
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 h-7 text-xs border-muted-foreground/30"
+              className="flex-1 h-7 text-xs border-border hover:border-primary"
               onClick={() => window.open(participant.telegram_handle, "_blank")}
             >
               <ExternalLink className="w-3 h-3 mr-1" />
@@ -177,12 +177,12 @@ export function ParticipantCard({
             </Button>
             {!isMe && (
               requestStatus === "accepted" ? (
-                <Badge className="h-7 px-2 bg-accent/20 text-accent text-xs flex items-center">
+                <Badge className="h-7 px-2 bg-success/10 text-success border border-success/20 text-xs flex items-center">
                   <Check className="w-3 h-3 mr-1" />
                   Matched
                 </Badge>
               ) : requestStatus === "pending" ? (
-                <Badge className="h-7 px-2 bg-primary/20 text-primary text-xs flex items-center">
+                <Badge className="h-7 px-2 bg-primary/10 text-primary border border-primary/20 text-xs flex items-center">
                   <Clock className="w-3 h-3 mr-1" />
                   Pending
                 </Badge>
@@ -191,7 +191,7 @@ export function ParticipantCard({
                   <DialogTrigger asChild>
                     <Button
                       size="sm"
-                      className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90"
+                      className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       <MessageSquare className="w-3 h-3 mr-1" />
                       Meet
@@ -199,7 +199,7 @@ export function ParticipantCard({
                   </DialogTrigger>
                   <DialogContent className="bg-card border-border">
                     <DialogHeader>
-                      <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
+                      <DialogTitle className="font-serif">Request Meeting with {participant.name}</DialogTitle>
                       <DialogDescription>
                         {currentUserId 
                           ? "Send a meeting request to connect during the networking session"
@@ -216,13 +216,13 @@ export function ParticipantCard({
                             placeholder="Hi! I'd love to chat about..."
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            className="bg-secondary border-border"
+                            className="bg-input border-border focus:border-primary"
                           />
                         </div>
                         <Button
                           onClick={handleRequestMeeting}
                           disabled={isSubmitting}
-                          className="w-full bg-primary hover:bg-primary/90"
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                           {isSubmitting ? "Sending..." : "Send Request"}
                         </Button>
@@ -244,18 +244,18 @@ export function ParticipantCard({
 
   return (
     <Card
-      className={`bg-card/50 border-border transition-all hover:border-primary/50 ${
+      className={`bg-card border-border transition-all hover:border-primary/50 ${
         isSelected ? "border-primary" : ""
       }`}
       onClick={onSelect}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-foreground flex items-center gap-2 text-lg">
+          <CardTitle className="text-foreground flex items-center gap-2 text-lg font-sans font-semibold">
             <RoleIcon className="w-5 h-5 text-primary" />
             {participant.name}
           </CardTitle>
-          <Badge variant="secondary" className="bg-primary/20 text-primary">
+          <Badge className="bg-primary/10 text-primary border border-primary/20">
             {participant.role}
           </Badge>
         </div>
@@ -266,7 +266,7 @@ export function ParticipantCard({
             <Badge
               key={interest}
               variant="outline"
-              className="text-xs border-muted-foreground/30"
+              className="text-xs border-primary/30 text-primary"
             >
               {interest}
             </Badge>
@@ -277,7 +277,7 @@ export function ParticipantCard({
           <Button
             variant="outline"
             size="sm"
-            className={currentUserId === participant.id ? "flex-1" : "flex-1 border-muted-foreground/30"}
+            className={currentUserId === participant.id ? "flex-1" : "flex-1 border-border hover:border-primary"}
             onClick={(e) => {
               e.stopPropagation();
               window.open(participant.telegram_handle, "_blank");
@@ -289,12 +289,12 @@ export function ParticipantCard({
 
           {currentUserId && currentUserId !== participant.id && (
             requestStatus === "accepted" ? (
-              <Badge className="h-8 px-3 bg-accent/20 text-accent flex items-center">
+              <Badge className="h-8 px-3 bg-success/10 text-success border border-success/20 flex items-center">
                 <Check className="w-4 h-4 mr-1" />
                 Matched
               </Badge>
             ) : requestStatus === "pending" ? (
-              <Badge className="h-8 px-3 bg-primary/20 text-primary flex items-center">
+              <Badge className="h-8 px-3 bg-primary/10 text-primary border border-primary/20 flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
                 Pending
               </Badge>
@@ -303,7 +303,7 @@ export function ParticipantCard({
                 <DialogTrigger asChild>
                   <Button
                     size="sm"
-                    className="flex-1 bg-primary hover:bg-primary/90"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MessageSquare className="w-4 h-4 mr-1" />
@@ -312,7 +312,7 @@ export function ParticipantCard({
                 </DialogTrigger>
               <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
                 <DialogHeader>
-                  <DialogTitle>Request Meeting with {participant.name}</DialogTitle>
+                  <DialogTitle className="font-serif">Request Meeting with {participant.name}</DialogTitle>
                   <DialogDescription>
                     Send a meeting request to connect during the networking session
                   </DialogDescription>
@@ -325,13 +325,13 @@ export function ParticipantCard({
                       placeholder="Hi! I'd love to chat about..."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      className="bg-secondary border-border"
+                      className="bg-input border-border focus:border-primary"
                     />
                   </div>
                   <Button
                     onClick={handleRequestMeeting}
                     disabled={isSubmitting}
-                    className="w-full bg-primary hover:bg-primary/90"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {isSubmitting ? "Sending..." : "Send Request"}
                   </Button>
