@@ -287,7 +287,7 @@ export default function PublicRegister() {
   return (
     <div className="min-h-screen bg-background">
       {/* Network Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.12]">
         <NetworkBackground />
       </div>
 

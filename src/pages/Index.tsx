@@ -13,7 +13,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       {/* Network Background - subtle, fixed */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.10]">
         <NetworkBackground />
       </div>
 
@@ -39,7 +39,7 @@ export default function Index() {
 
         {/* Hero Section - with corner bracket decoration */}
         <main className="flex-1 container mx-auto px-6 md:px-12 py-16 md:py-24">
-          <div className="relative max-w-3xl mx-auto text-center mb-32 md:mb-40">
+          <div className="relative max-w-3xl mx-auto text-center mb-40 md:mb-56">
             {/* Decorative corner bracket - top right */}
             <CornerBracket 
               className="hidden md:block absolute -top-8 -right-16 text-charcoal rotate-90" 
@@ -74,11 +74,11 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Features - asymmetric staggered layout */}
-          <div className="max-w-5xl mx-auto mb-32 md:mb-40">
-            <div className="relative space-y-16 md:space-y-0 md:min-h-[500px]">
+          {/* Features - asymmetric staggered layout with enhanced diagonal flow */}
+          <div className="max-w-5xl mx-auto mb-40 md:mb-56">
+            <div className="relative space-y-16 md:space-y-0 md:min-h-[520px]">
               {/* Feature 1 - offset left */}
-              <div className="md:absolute md:left-[5%] md:top-0 text-center md:text-left md:max-w-xs">
+              <div className="md:absolute md:left-[10%] md:top-0 text-center md:text-left md:max-w-xs">
                 <LayeredDiamondsIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={56} />
                 <h3 className="font-serif text-xl font-medium text-foreground mb-3">
                   Shareable Forms
@@ -89,8 +89,8 @@ export default function Index() {
                 </p>
               </div>
 
-              {/* Feature 2 - center-right, lower */}
-              <div className="md:absolute md:left-[40%] md:top-[140px] text-center md:text-left md:max-w-xs">
+              {/* Feature 2 - center-right, significantly lower */}
+              <div className="md:absolute md:left-[45%] md:top-[200px] text-center md:text-left md:max-w-xs">
                 <OverlappingCirclesIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={56} />
                 <h3 className="font-serif text-xl font-medium text-foreground mb-3">
                   AI Matching
@@ -102,7 +102,7 @@ export default function Index() {
               </div>
 
               {/* Feature 3 - right, middle height */}
-              <div className="md:absolute md:right-[5%] md:top-[60px] text-center md:text-left md:max-w-xs">
+              <div className="md:absolute md:left-[70%] md:top-[80px] text-center md:text-left md:max-w-xs">
                 <SunburstIcon className="text-charcoal mx-auto md:mx-0 mb-6" size={56} />
                 <h3 className="font-serif text-xl font-medium text-foreground mb-3">
                   Meeting Requests

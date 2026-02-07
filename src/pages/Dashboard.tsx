@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SparkleIcon } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
+import { CornerBracket, SectionDivider } from "@/components/icons/DecorativeLines";
 
 interface Event {
   id: string;
@@ -136,7 +137,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Network Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.12]">
         <NetworkBackground />
       </div>
 
@@ -240,9 +241,15 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="container mx-auto px-6 md:px-12 py-12">
-          <div className="mb-12">
+          <div className="mb-12 relative">
+            {/* Decorative corner bracket */}
+            <CornerBracket 
+              className="hidden md:block absolute -top-4 -right-4 text-charcoal rotate-90" 
+              size={60} 
+            />
             <h1 className="font-serif text-3xl md:text-4xl font-medium text-foreground mb-2">Your Events</h1>
             <p className="text-muted-foreground">Manage events and share registration links</p>
+            <SectionDivider className="mt-8" />
           </div>
 
           {isLoading ? (
@@ -265,17 +272,19 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-0">
-              {/* Vertical timeline indicator */}
+              {/* Vertical timeline indicator with nodes */}
               <div className="relative">
                 <div className="absolute left-0 top-0 bottom-0 w-px bg-border/30 hidden md:block" />
                 
                 {events.map((event, index) => (
                   <div 
                     key={event.id} 
-                    className={`py-8 border-b border-border/30 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8 ${
-                      index % 2 === 0 ? 'md:pl-8' : 'md:pl-12'
+                    className={`py-8 border-b border-border/30 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8 relative ${
+                      index % 2 === 0 ? 'md:pl-8' : 'md:pl-16'
                     }`}
                   >
+                    {/* Timeline node */}
+                    <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[3px] w-[7px] h-[7px] rounded-full border border-border/50 bg-background" />
                     {/* Event info */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">

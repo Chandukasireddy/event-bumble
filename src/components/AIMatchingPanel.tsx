@@ -418,7 +418,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                 <div 
                   key={index} 
                   className={`py-6 border-b border-border/30 last:border-b-0 ${
-                    index % 2 === 1 ? 'md:pl-6' : ''
+                    index % 2 === 1 ? 'md:pl-10' : ''
                   }`}
                 >
                   {isYourMatch && otherPerson ? (
