@@ -22,7 +22,8 @@ import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
 import { SparkleIcon, OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
-import { CornerBracketFlipped, SparkleAccent } from "@/components/icons/DecorativeLines";
+import { CornerBracketFlipped, MediumSparkle } from "@/components/icons/DecorativeLines";
+import { LargeBracketFlipped, TitleSparkle, NetworkCluster } from "@/components/BoldDecorations";
 
 interface Event {
   id: string;
@@ -152,6 +153,12 @@ export default function EventDetail() {
     });
   };
 
+  // Dramatic zig-zag indent pattern for participants
+  const getParticipantIndent = (index: number) => {
+    const pattern = [0, 80, 24, 100, 40, 72];
+    return pattern[index % pattern.length];
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -186,8 +193,8 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Network Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.12]">
+      {/* Network Background - BOLD 25% opacity */}
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.25]">
         <NetworkBackground />
       </div>
 
@@ -204,7 +211,7 @@ export default function EventDetail() {
               </Link>
               <div className="flex items-center gap-3 flex-1">
                 <SparkleIcon className="text-primary" size={24} />
-                <SparkleAccent className="text-primary hidden md:block" size={12} />
+                <TitleSparkle className="text-primary hidden md:block" size={16} />
                 <div className="flex-1">
                   <h1 className="font-serif text-xl font-medium text-foreground">{event.name}</h1>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
@@ -241,11 +248,17 @@ export default function EventDetail() {
 
         {/* Main Content */}
         <main className="container mx-auto px-6 md:px-12 py-8 relative">
-          {/* Decorative corner bracket */}
-          <CornerBracketFlipped 
+          {/* LARGE decorative corner bracket - bottom right */}
+          <LargeBracketFlipped 
             className="hidden md:block absolute bottom-4 right-4 text-charcoal" 
-            size={60} 
+            size={120} 
           />
+          {/* Network cluster decoration */}
+          <NetworkCluster 
+            className="hidden lg:block absolute right-24 top-20 text-charcoal" 
+            size={70} 
+          />
+          
           <Tabs defaultValue="ai-match" className="space-y-8">
             <TabsList className="bg-transparent border-b border-border/50 rounded-none w-full justify-start gap-6 p-0 h-auto">
               <TabsTrigger 
@@ -318,18 +331,24 @@ export default function EventDetail() {
                     />
                   </div>
                   
-                  {/* Filtered Participants List with alternating indents */}
+                  {/* Filtered Participants List with DRAMATIC zig-zag indents */}
                   {filteredParticipants.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       No participants found matching "{searchQuery}"
                     </div>
                   ) : (
-                    <div className="space-y-0">
+                    <div className="space-y-0 relative">
+                      {/* Bold vertical timeline */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-charcoal/25 hidden md:block" />
+                      
                       {filteredParticipants.map((participant, index) => (
                         <div 
                           key={participant.id}
-                          className={index % 2 === 1 ? 'md:pl-10' : ''}
+                          className="relative py-2"
+                          style={{ paddingLeft: `${getParticipantIndent(index)}px` }}
                         >
+                          {/* Timeline node */}
+                          <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[5px] w-[11px] h-[11px] rounded-full border-2 border-charcoal/30 bg-background" />
                           <ParticipantCard
                             participant={participant}
                             eventId={event.id}
