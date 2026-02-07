@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Code, Palette, Briefcase, ArrowRight, RefreshCw, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
+import { OverlappingCirclesIcon, SparkleIcon } from "@/components/icons/GeometricIcons";
 
 const ROLE_ICONS = {
   Dev: Code,
@@ -351,7 +350,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
         </div>
       )}
 
-      {/* Generate Button - clean section */}
+      {/* Generate Button - as text link CTA */}
       <div className="text-center py-8">
         <OverlappingCirclesIcon className="text-charcoal mx-auto mb-6" size={48} />
         <h2 className="font-serif text-2xl font-medium text-foreground mb-2">
@@ -363,29 +362,34 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
             : `Let AI analyze participant profiles and suggest optimal networking pairs`
           }
         </p>
-        <Button
+        
+        {/* Text link CTA instead of button */}
+        <button
           onClick={generateMatches}
           disabled={isLoading || participants.length < 2}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+          className="text-link-cta group disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              <RefreshCw className="w-5 h-5 animate-spin" />
               Finding your matches...
             </>
           ) : hasGenerated ? (
             <>
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCw className="w-5 h-5" />
               Find More Matches
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </>
           ) : (
             <>
-              <Zap className="w-4 h-4 mr-2" />
+              <SparkleIcon className="text-primary" size={20} />
               {currentUser ? "Find My Matches" : "Generate AI Matches"}
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </>
           )}
-        </Button>
-        <p className="text-xs text-muted-foreground mt-3">
+        </button>
+        
+        <p className="text-xs text-muted-foreground mt-4">
           {currentUser 
             ? `${participants.filter(p => p.id !== currentUser.id && !existingRequestIds.has(p.id)).length} people available`
             : `${participants.length} participants`
@@ -400,7 +404,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
             {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
           </h3>
           
-          <div className="space-y-6">
+          <div className="space-y-8">
             {filteredSuggestions.map((suggestion, index) => {
               const Icon1 = RoleIcon1(suggestion.participant1.role);
               const Icon2 = RoleIcon1(suggestion.participant2.role);
@@ -413,7 +417,9 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
               return (
                 <div 
                   key={index} 
-                  className="py-6 border-b border-border/30 last:border-b-0"
+                  className={`py-6 border-b border-border/30 last:border-b-0 ${
+                    index % 2 === 1 ? 'md:pl-6' : ''
+                  }`}
                 >
                   {isYourMatch && otherPerson ? (
                     // Personalized view
@@ -453,13 +459,14 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                         </p>
                       </div>
                       
-                      <Button
+                      {/* Text link CTA */}
+                      <button
                         onClick={() => createMeetingFromSuggestion(suggestion)}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="text-link-cta group whitespace-nowrap"
                       >
                         Request to Meet
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </button>
                     </div>
                   ) : (
                     // Standard view
@@ -480,20 +487,38 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
                         </p>
                       </div>
                       
-                      <Button
+                      <button
                         onClick={() => createMeetingFromSuggestion(suggestion)}
-                        variant="outline"
-                        size="sm"
-                        className="border-border hover:border-primary"
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
                       >
                         Create Meeting
-                      </Button>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* No suggestions state */}
+      {hasGenerated && filteredSuggestions.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">
+            {existingRequestIds.size > 0 
+              ? "You've already connected with all your matches! Find more below."
+              : "No matches found yet. Try generating again!"}
+          </p>
+          <button
+            onClick={generateMatches}
+            disabled={isLoading}
+            className="text-sm text-primary hover:underline flex items-center gap-1 mx-auto"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Find More Matches
+          </button>
         </div>
       )}
     </div>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +16,7 @@ import { Plus, Calendar, MapPin, Users, Copy, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SparkleIcon } from "@/components/icons/GeometricIcons";
+import { NetworkBackground } from "@/components/NetworkBackground";
 
 interface Event {
   id: string;
@@ -135,12 +135,17 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Network Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.08]">
+        <NetworkBackground />
+      </div>
+
       <div className="relative z-10">
         {/* Header - minimal */}
         <header className="py-6">
           <div className="container mx-auto px-6 md:px-12 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <SparkleIcon className="text-primary" size={28} />
+              <SparkleIcon className="text-primary" size={32} />
               <div>
                 <span className="font-serif text-xl text-foreground tracking-tight">
                   Meet<span className="text-primary">Spark</span>
@@ -151,10 +156,11 @@ export default function Dashboard() {
 
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Plus className="w-4 h-4 mr-2" />
+                <button className="text-link-cta group">
+                  <Plus className="w-5 h-5" />
                   Create Event
-                </Button>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border">
                 <DialogHeader>
@@ -218,9 +224,14 @@ export default function Dashboard() {
                       className="bg-input border-border focus:border-primary"
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isCreating}>
-                    {isCreating ? "Creating..." : "Create Event"}
-                  </Button>
+                  {/* Submit as text link */}
+                  <button 
+                    type="submit" 
+                    disabled={isCreating}
+                    className="w-full text-link-cta justify-center py-4 border-t border-border/50 mt-6"
+                  >
+                    {isCreating ? "Creating..." : "Create Event →"}
+                  </button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -242,66 +253,77 @@ export default function Dashboard() {
             <div className="text-center py-24">
               <SparkleIcon className="text-muted-foreground mx-auto mb-6" size={48} />
               <h3 className="font-serif text-xl font-medium text-foreground mb-2">No events yet</h3>
-              <p className="text-muted-foreground mb-6">Create your first event to get started</p>
-              <Button onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Plus className="w-4 h-4 mr-2" />
+              <p className="text-muted-foreground mb-8">Create your first event to get started</p>
+              <button 
+                onClick={() => setShowCreateDialog(true)} 
+                className="text-link-cta"
+              >
+                <Plus className="w-5 h-5" />
                 Create Event
-              </Button>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           ) : (
-            <div className="space-y-8">
-              {events.map((event) => (
-                <div 
-                  key={event.id} 
-                  className="py-6 border-b border-border/50 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8"
-                >
-                  {/* Event info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className="font-serif text-xl font-medium text-foreground">{event.name}</h2>
-                      <Badge className="bg-success/10 text-success border-0 text-xs px-2 py-0.5">
-                        <Users className="w-3 h-3 mr-1" />
-                        {event.participant_count}
-                      </Badge>
-                    </div>
-                    {event.description && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{event.description}</p>
-                    )}
-                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                      {event.event_date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(event.event_date).toLocaleDateString()}
+            <div className="space-y-0">
+              {/* Vertical timeline indicator */}
+              <div className="relative">
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-border/30 hidden md:block" />
+                
+                {events.map((event, index) => (
+                  <div 
+                    key={event.id} 
+                    className={`py-8 border-b border-border/30 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8 ${
+                      index % 2 === 0 ? 'md:pl-8' : 'md:pl-12'
+                    }`}
+                  >
+                    {/* Event info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="font-serif text-xl font-medium text-foreground">{event.name}</h2>
+                        <span className="text-xs text-success flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {event.participant_count}
                         </span>
+                      </div>
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{event.description}</p>
                       )}
-                      {event.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {event.location}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                        {event.event_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(event.event_date).toLocaleDateString()}
+                          </span>
+                        )}
+                        {event.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {event.location}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => copyShareLink(event.share_code)}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                    >
-                      <Copy className="w-3 h-3" />
-                      Copy Link
-                    </button>
-                    <Link 
-                      to={`/event/${event.id}`}
-                      className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
-                    >
-                      Manage
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
+                    {/* Actions - text links only */}
+                    <div className="flex gap-4 items-center">
+                      <button
+                        onClick={() => copyShareLink(event.share_code)}
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy Link
+                      </button>
+                      <Link 
+                        to={`/event/${event.id}`}
+                        className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                      >
+                        Manage
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </main>

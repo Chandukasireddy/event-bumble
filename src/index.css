@@ -140,4 +140,44 @@
   .select-button-selected {
     @apply border-primary bg-primary text-primary-foreground;
   }
+
+  /* Text Link Styles - No Rectangles (Phase 3) */
+  .text-link-cta {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    color: hsl(var(--primary));
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    min-height: 44px;
+  }
+  .text-link-cta:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .text-link-cta:focus {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  .text-link-action {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    transition: color 0.2s;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .text-link-action:hover {
+    color: hsl(var(--foreground));
+  }
+
+  /* Decorative line utility */
+  .decorative-line {
+    stroke: hsl(var(--charcoal));
+    stroke-width: 1px;
+    opacity: 0.15;
+  }
 }
