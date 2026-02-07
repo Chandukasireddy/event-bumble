@@ -67,9 +67,11 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
   
-  /* Serif headlines */
+  /* Distinctive serif headlines - Cormorant Garamond */
   h1, h2, .font-serif {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 }
 

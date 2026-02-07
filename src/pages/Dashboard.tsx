@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +13,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Sparkles, Plus, Calendar, MapPin, Users, Copy, ExternalLink } from "lucide-react";
+import { Plus, Calendar, MapPin, Users, Copy, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SparkleIcon } from "@/components/icons/GeometricIcons";
 
 interface Event {
   id: string;
@@ -135,22 +135,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Subtle background accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
-      </div>
-
       <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-border backdrop-blur-sm bg-background/80">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        {/* Header - minimal */}
+        <header className="py-6">
+          <div className="container mx-auto px-6 md:px-12 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded flex items-center justify-center bg-primary/10 border border-primary/20">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
+              <SparkleIcon className="text-primary" size={28} />
               <div>
-                <h1 className="font-serif font-semibold text-lg text-foreground">MeetSpark</h1>
+                <span className="font-serif text-xl text-foreground tracking-tight">
+                  Meet<span className="text-primary">Spark</span>
+                </span>
                 <p className="text-xs text-muted-foreground">Organizer Dashboard</p>
               </div>
             </Link>
@@ -234,83 +228,79 @@ export default function Dashboard() {
         </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h2 className="font-serif text-2xl font-medium text-foreground mb-2">Your Events</h2>
+        <main className="container mx-auto px-6 md:px-12 py-12">
+          <div className="mb-12">
+            <h1 className="font-serif text-3xl md:text-4xl font-medium text-foreground mb-2">Your Events</h1>
             <p className="text-muted-foreground">Manage events and share registration links</p>
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-24">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : events.length === 0 ? (
-            <Card className="bg-card border-border">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Sparkles className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No events yet</h3>
-                <p className="text-muted-foreground mb-4">Create your first event to get started</p>
-                <Button onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Event
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="text-center py-24">
+              <SparkleIcon className="text-muted-foreground mx-auto mb-6" size={48} />
+              <h3 className="font-serif text-xl font-medium text-foreground mb-2">No events yet</h3>
+              <p className="text-muted-foreground mb-6">Create your first event to get started</p>
+              <Button onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Event
+              </Button>
+            </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-8">
               {events.map((event) => (
-                <Card key={event.id} className="bg-card border-border hover:border-primary/50 transition-colors">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="font-sans font-semibold text-foreground">{event.name}</CardTitle>
-                        {event.description && (
-                          <CardDescription className="mt-1 line-clamp-2">
-                            {event.description}
-                          </CardDescription>
-                        )}
-                      </div>
-                      <Badge className="bg-success/10 text-success border border-success/20">
+                <div 
+                  key={event.id} 
+                  className="py-6 border-b border-border/50 last:border-b-0 flex flex-col md:flex-row md:items-center gap-4 md:gap-8"
+                >
+                  {/* Event info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="font-serif text-xl font-medium text-foreground">{event.name}</h2>
+                      <Badge className="bg-success/10 text-success border-0 text-xs px-2 py-0.5">
                         <Users className="w-3 h-3 mr-1" />
                         {event.participant_count}
                       </Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                    {event.description && (
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{event.description}</p>
+                    )}
+                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                       {event.event_date && (
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="w-3 h-3" />
                           {new Date(event.event_date).toLocaleDateString()}
                         </span>
                       )}
                       {event.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
+                          <MapPin className="w-3 h-3" />
                           {event.location}
                         </span>
                       )}
                     </div>
+                  </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 border-border hover:border-primary"
-                        onClick={() => copyShareLink(event.share_code)}
-                      >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy Link
-                      </Button>
-                      <Button asChild size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                        <Link to={`/event/${event.id}`}>
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Manage
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => copyShareLink(event.share_code)}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" />
+                      Copy Link
+                    </button>
+                    <Link 
+                      to={`/event/${event.id}`}
+                      className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                    >
+                      Manage
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
           )}
