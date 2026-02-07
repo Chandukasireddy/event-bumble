@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Zap, Plus, Calendar, MapPin, Users, Copy, ExternalLink, Sparkles } from "lucide-react";
+import { Sparkles, Plus, Calendar, MapPin, Users, Copy, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -135,36 +135,36 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Background */}
+      {/* Subtle background accents */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-border/50 backdrop-blur-sm bg-background/80">
+        <header className="border-b border-border backdrop-blur-sm bg-background/80">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center glow-purple">
-                <Zap className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded flex items-center justify-center bg-primary/10 border border-primary/20">
+                <Sparkles className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">Event Matchmaker</h1>
+                <h1 className="font-serif font-semibold text-lg text-foreground">MeetSpark</h1>
                 <p className="text-xs text-muted-foreground">Organizer Dashboard</p>
               </div>
             </Link>
 
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 glow-purple">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Event
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border">
                 <DialogHeader>
-                  <DialogTitle className="text-foreground">Create New Event</DialogTitle>
+                  <DialogTitle className="font-serif text-foreground">Create New Event</DialogTitle>
                   <DialogDescription>
                     Set up your event and get a shareable registration link
                   </DialogDescription>
@@ -177,7 +177,7 @@ export default function Dashboard() {
                       placeholder="AI Hackathon Berlin 2025"
                       value={newEvent.name}
                       onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-                      className="bg-secondary border-border"
+                      className="bg-input border-border focus:border-primary"
                     />
                   </div>
                   <div className="space-y-2">
@@ -187,7 +187,7 @@ export default function Dashboard() {
                       placeholder="Brief description of your event"
                       value={newEvent.description}
                       onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                      className="bg-secondary border-border"
+                      className="bg-input border-border focus:border-primary"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -198,7 +198,7 @@ export default function Dashboard() {
                         type="date"
                         value={newEvent.event_date}
                         onChange={(e) => setNewEvent({ ...newEvent, event_date: e.target.value })}
-                        className="bg-secondary border-border"
+                        className="bg-input border-border focus:border-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -210,7 +210,7 @@ export default function Dashboard() {
                         max="30"
                         value={newEvent.networking_duration}
                         onChange={(e) => setNewEvent({ ...newEvent, networking_duration: parseInt(e.target.value) || 5 })}
-                        className="bg-secondary border-border"
+                        className="bg-input border-border focus:border-primary"
                       />
                     </div>
                   </div>
@@ -221,10 +221,10 @@ export default function Dashboard() {
                       placeholder="Berlin, Germany"
                       value={newEvent.location}
                       onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                      className="bg-secondary border-border"
+                      className="bg-input border-border focus:border-primary"
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isCreating}>
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isCreating}>
                     {isCreating ? "Creating..." : "Create Event"}
                   </Button>
                 </form>
@@ -236,7 +236,7 @@ export default function Dashboard() {
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gradient mb-2">Your Events</h2>
+            <h2 className="font-serif text-2xl font-medium text-foreground mb-2">Your Events</h2>
             <p className="text-muted-foreground">Manage events and share registration links</p>
           </div>
 
@@ -245,12 +245,12 @@ export default function Dashboard() {
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : events.length === 0 ? (
-            <Card className="bg-card/50 border-border">
+            <Card className="bg-card border-border">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Sparkles className="w-12 h-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No events yet</h3>
                 <p className="text-muted-foreground mb-4">Create your first event to get started</p>
-                <Button onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-primary/90">
+                <Button onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Event
                 </Button>
@@ -259,18 +259,18 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
-                <Card key={event.id} className="bg-card/50 border-border hover:border-primary/50 transition-colors">
+                <Card key={event.id} className="bg-card border-border hover:border-primary/50 transition-colors">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-foreground">{event.name}</CardTitle>
+                        <CardTitle className="font-sans font-semibold text-foreground">{event.name}</CardTitle>
                         {event.description && (
                           <CardDescription className="mt-1 line-clamp-2">
                             {event.description}
                           </CardDescription>
                         )}
                       </div>
-                      <Badge variant="secondary" className="bg-accent/20 text-accent">
+                      <Badge className="bg-success/10 text-success border border-success/20">
                         <Users className="w-3 h-3 mr-1" />
                         {event.participant_count}
                       </Badge>
@@ -296,13 +296,13 @@ export default function Dashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 border-muted-foreground/30"
+                        className="flex-1 border-border hover:border-primary"
                         onClick={() => copyShareLink(event.share_code)}
                       >
                         <Copy className="w-4 h-4 mr-2" />
                         Copy Link
                       </Button>
-                      <Button asChild size="sm" className="flex-1 bg-primary hover:bg-primary/90">
+                      <Button asChild size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
                         <Link to={`/event/${event.id}`}>
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Manage

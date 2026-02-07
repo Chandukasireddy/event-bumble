@@ -71,14 +71,14 @@ function SelectButton({ selected, onClick, label, desc }: SelectButtonProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full text-left p-3 rounded-lg border transition-all duration-200",
+        "w-full text-left p-3 rounded border transition-all duration-200",
         selected
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-secondary/50 hover:border-primary/50"
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-transparent hover:border-primary/50"
       )}
     >
       <span className="font-medium">{label}</span>
-      {desc && <p className="text-xs text-muted-foreground mt-1">{desc}</p>}
+      {desc && <p className={cn("text-xs mt-1", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>{desc}</p>}
     </button>
   );
 }
@@ -179,19 +179,19 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-foreground/80">Name *</Label>
+        <Label htmlFor="name" className="text-foreground">Name *</Label>
         <Input
           id="name"
           placeholder="Your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
+          className="bg-input border-border focus:border-primary"
         />
       </div>
 
       {/* My Vibe */}
       <div className="space-y-3">
-        <Label className="text-foreground/80">My Vibe - Which area excites you most? *</Label>
+        <Label className="text-foreground">My Vibe - Which area excites you most? *</Label>
         <div className="grid grid-cols-2 gap-2">
           {VIBE_OPTIONS.map((option) => (
             <SelectButton
@@ -206,7 +206,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
 
       {/* My Superpower */}
       <div className="space-y-3">
-        <Label className="text-foreground/80">My Superpower (The "Give") - I'm the one who... *</Label>
+        <Label className="text-foreground">My Superpower (The "Give") - I'm the one who... *</Label>
         <div className="grid gap-2">
           {SUPERPOWER_OPTIONS.map((option) => (
             <SelectButton
@@ -222,7 +222,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
 
       {/* My Ideal Co-Pilot */}
       <div className="space-y-3">
-        <Label className="text-foreground/80">My Ideal Co-Pilot (The "Get") - I'm looking for a... *</Label>
+        <Label className="text-foreground">My Ideal Co-Pilot (The "Get") - I'm looking for a... *</Label>
         <div className="grid gap-2">
           {COPILOT_OPTIONS.map((option) => (
             <SelectButton
@@ -238,7 +238,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
 
       {/* My Off-Screen Life */}
       <div className="space-y-3">
-        <Label className="text-foreground/80">My Off-Screen Life - Find me...</Label>
+        <Label className="text-foreground">My Off-Screen Life - Find me...</Label>
         <div className="grid grid-cols-2 gap-2">
           {OFFSCREEN_OPTIONS.map((option) => (
             <SelectButton
@@ -254,13 +254,13 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
 
       {/* Bio */}
       <div className="space-y-2">
-        <Label htmlFor="bio" className="text-foreground/80">About You (Short intro to find your match)</Label>
+        <Label htmlFor="bio" className="text-foreground">About You (Short intro to find your match)</Label>
         <Textarea
           id="bio"
           placeholder="Tell us a bit about yourself, what you're working on, or what you're looking for..."
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          className="bg-secondary border-border focus:border-primary focus:ring-primary/20 min-h-[80px]"
+          className="bg-input border-border focus:border-primary min-h-[80px]"
           maxLength={300}
         />
         <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
@@ -268,19 +268,19 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
 
       {/* LinkedIn (Optional) */}
       <div className="space-y-2">
-        <Label htmlFor="linkedin" className="text-foreground/80">LinkedIn Profile URL (Optional)</Label>
+        <Label htmlFor="linkedin" className="text-foreground">LinkedIn Profile URL (Optional)</Label>
         <Input
           id="linkedin"
           placeholder="https://linkedin.com/in/yourprofile"
           value={linkedinUrl}
           onChange={(e) => setLinkedinUrl(e.target.value)}
-          className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
+          className="bg-input border-border focus:border-primary"
         />
       </div>
 
       {/* How to Find Me (Optional) */}
       <div className="space-y-2">
-        <Label htmlFor="howToFindMe" className="text-foreground/80 flex items-center gap-2">
+        <Label htmlFor="howToFindMe" className="text-foreground flex items-center gap-2">
           <MapPin className="w-4 h-4" />
           How to Find Me (Optional)
         </Label>
@@ -289,7 +289,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
           placeholder={FIND_ME_SUGGESTIONS[currentSuggestion]}
           value={howToFindMe}
           onChange={(e) => setHowToFindMe(e.target.value)}
-          className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
+          className="bg-input border-border focus:border-primary"
         />
         <div className="flex flex-wrap gap-1.5 mt-2">
           {FIND_ME_SUGGESTIONS.slice(0, 4).map((suggestion, i) => (
@@ -297,7 +297,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
               key={i}
               type="button"
               onClick={() => setHowToFindMe(suggestion)}
-              className="text-xs px-2 py-1 rounded-full bg-secondary/70 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+              className="text-xs px-2 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
             >
               {suggestion}
             </button>
@@ -308,7 +308,7 @@ export function RegistrationForm({ webhookUrl, onSubmitSuccess }: RegistrationFo
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-purple transition-all duration-300"
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold transition-all duration-300"
       >
         {isSubmitting ? (
           "Registering..."

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Zap,
+  Sparkles,
   ArrowLeft,
   Users,
   Code,
@@ -14,7 +14,6 @@ import {
   Briefcase,
   MessageSquare,
   Copy,
-  Sparkles,
   Calendar,
   MapPin,
   Clock,
@@ -172,7 +171,7 @@ export default function EventDetail() {
   if (!event) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <h2 className="text-xl font-bold text-foreground mb-4">Event not found</h2>
+        <h2 className="font-serif text-xl font-medium text-foreground mb-4">Event not found</h2>
         <Button asChild variant="outline">
           <Link to="/dashboard">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -185,15 +184,15 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Background */}
+      {/* Subtle background accents */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-border/50 backdrop-blur-sm bg-background/80">
+        <header className="border-b border-border backdrop-blur-sm bg-background/80">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
               <Button asChild variant="ghost" size="icon">
@@ -202,11 +201,11 @@ export default function EventDetail() {
                 </Link>
               </Button>
               <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center glow-purple">
-                  <Zap className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded flex items-center justify-center bg-primary/10 border border-primary/20">
+                  <Sparkles className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h1 className="font-bold text-lg text-foreground">{event.name}</h1>
+                  <h1 className="font-serif font-semibold text-lg text-foreground">{event.name}</h1>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     {event.event_date && (
                       <span className="flex items-center gap-1">
@@ -227,7 +226,7 @@ export default function EventDetail() {
                   </div>
                 </div>
               </div>
-              <Button onClick={copyShareLink} variant="outline" className="border-muted-foreground/30">
+              <Button onClick={copyShareLink} variant="outline" className="border-border hover:border-primary">
                 <Copy className="w-4 h-4 mr-2" />
                 Copy Registration Link
               </Button>
@@ -238,12 +237,12 @@ export default function EventDetail() {
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="ai-match" className="space-y-6">
-            <TabsList className="bg-secondary/50">
-              <TabsTrigger value="ai-match" className="data-[state=active]:bg-primary/20">
+            <TabsList className="bg-secondary">
+              <TabsTrigger value="ai-match" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Sparkles className="w-4 h-4 mr-2" />
                 AI Matching
               </TabsTrigger>
-              <TabsTrigger value="meetings" className="data-[state=active]:bg-primary/20 relative">
+              <TabsTrigger value="meetings" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary relative">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Meeting Requests
                 {(unreadCounts.pendingRequests + unreadCounts.unreadMessages) > 0 && (
@@ -252,7 +251,7 @@ export default function EventDetail() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
+              <TabsTrigger value="participants" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Users className="w-4 h-4 mr-2" />
                 Participants ({participants.length})
               </TabsTrigger>
@@ -274,12 +273,12 @@ export default function EventDetail() {
 
             <TabsContent value="participants">
               {participants.length === 0 ? (
-                <Card className="bg-card/50 border-border">
+                <Card className="bg-card border-border">
                   <CardContent className="flex flex-col items-center justify-center py-12">
                     <Users className="w-12 h-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold text-foreground mb-2">No participants yet</h3>
                     <p className="text-muted-foreground mb-4">Share the registration link to get participants</p>
-                    <Button onClick={copyShareLink} className="bg-primary hover:bg-primary/90">
+                    <Button onClick={copyShareLink} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                       <Copy className="w-4 h-4 mr-2" />
                       Copy Registration Link
                     </Button>
@@ -294,7 +293,7 @@ export default function EventDetail() {
                       placeholder="Search by name, role, or interests..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-secondary/50 border-border"
+                      className="pl-10 bg-input border-border focus:border-primary"
                     />
                   </div>
                   

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Zap, Calendar, MapPin, CheckCircle2, User, Send } from "lucide-react";
+import { Sparkles, Calendar, MapPin, CheckCircle2, User, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -71,14 +71,14 @@ function SelectButton({ selected, onClick, label, desc }: SelectButtonProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full text-left p-3 rounded-lg border transition-all duration-200",
+        "w-full text-left p-3 rounded border transition-all duration-200",
         selected
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-border bg-secondary/50 hover:border-primary/50"
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-transparent hover:border-primary/50"
       )}
     >
       <span className="font-medium text-sm">{label}</span>
-      {desc && <p className="text-xs text-muted-foreground mt-1">{desc}</p>}
+      {desc && <p className={cn("text-xs mt-1", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>{desc}</p>}
     </button>
   );
 }
@@ -275,8 +275,8 @@ export default function PublicRegister() {
   if (!event) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <Zap className="w-12 h-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-bold text-foreground mb-2">Event not found</h2>
+        <Sparkles className="w-12 h-12 text-muted-foreground mb-4" />
+        <h2 className="font-serif text-xl font-medium text-foreground mb-2">Event not found</h2>
         <p className="text-muted-foreground">This registration link may be invalid or expired</p>
       </div>
     );
@@ -284,22 +284,22 @@ export default function PublicRegister() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Background */}
+      {/* Subtle background accents */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="border-b border-border/50 backdrop-blur-sm bg-background/80">
+        <header className="border-b border-border backdrop-blur-sm bg-background/80">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center glow-purple">
-                <Zap className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded flex items-center justify-center bg-primary/10 border border-primary/20">
+                <Sparkles className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-bold text-lg text-foreground">{event.name}</h1>
+                <h1 className="font-serif font-semibold text-lg text-foreground">{event.name}</h1>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   {event.event_date && (
                     <span className="flex items-center gap-1">
@@ -323,15 +323,15 @@ export default function PublicRegister() {
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-lg mx-auto space-y-6">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl md:text-3xl font-bold text-gradient">
-                Find Your Match
+              <h2 className="font-serif text-2xl md:text-3xl font-medium text-foreground">
+                Find Your <span className="italic text-primary">Match</span>
               </h2>
               <p className="text-muted-foreground">
                 {event.description || "Answer a few questions to connect with the right people"}
               </p>
             </div>
 
-            <Card className="bg-card/50 border-border">
+            <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Name with Autocomplete */}
@@ -343,11 +343,11 @@ export default function PublicRegister() {
                       value={name}
                       onChange={(e) => handleNameChange(e.target.value)}
                       onFocus={() => name.length >= 3 && nameSuggestions.length > 0 && setShowSuggestions(true)}
-                      className="bg-secondary border-border focus:border-primary"
+                      className="bg-input border-border focus:border-primary"
                       autoComplete="off"
                     />
                     {selectedExisting && (
-                      <p className="text-xs text-accent flex items-center gap-1">
+                      <p className="text-xs text-success flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" />
                         Found your registration! Update your details below.
                       </p>
@@ -451,7 +451,7 @@ export default function PublicRegister() {
                       placeholder="Tell us a bit about yourself, what you're working on, or what you're looking for..."
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
-                      className="bg-secondary border-border focus:border-primary min-h-[80px]"
+                      className="bg-input border-border focus:border-primary min-h-[80px]"
                       maxLength={300}
                     />
                     <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
@@ -465,14 +465,14 @@ export default function PublicRegister() {
                       placeholder="https://linkedin.com/in/yourprofile"
                       value={linkedinUrl}
                       onChange={(e) => setLinkedinUrl(e.target.value)}
-                      className="bg-secondary border-border focus:border-primary"
+                      className="bg-input border-border focus:border-primary"
                     />
                   </div>
 
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-purple transition-all duration-300"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold transition-all duration-300"
                   >
                     {isSubmitting ? (
                       "Registering..."

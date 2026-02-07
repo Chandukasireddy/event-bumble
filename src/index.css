@@ -2,45 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Berlin Tech Design System - Dark cyberpunk aesthetic */
+/* MeetSpark Design System - Light, sophisticated, refined */
 
 @layer base {
   :root {
-    --background: 220 20% 6%;
-    --foreground: 0 0% 95%;
+    /* Core Backgrounds */
+    --background: 40 33% 97%;
+    --foreground: 0 0% 17%;
 
-    --card: 220 20% 10%;
-    --card-foreground: 0 0% 95%;
+    /* Cards - Off-White */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
 
-    --popover: 220 20% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
 
-    --primary: 270 70% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Gold */
+    --primary: 43 49% 59%;
+    --primary-foreground: 0 0% 17%;
 
-    --secondary: 220 20% 14%;
-    --secondary-foreground: 0 0% 95%;
+    /* Secondary - Light neutral */
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 0 0% 17%;
 
-    --muted: 220 15% 18%;
-    --muted-foreground: 220 10% 55%;
+    /* Muted */
+    --muted: 40 15% 92%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 142 70% 50%;
-    --accent-foreground: 220 20% 6%;
+    /* Accent - Gold (same as primary) */
+    --accent: 43 49% 59%;
+    --accent-foreground: 0 0% 17%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive - Muted red */
+    --destructive: 0 50% 54%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 14%;
-    --ring: 270 70% 60%;
+    /* Success - Muted green */
+    --success: 143 34% 38%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    /* Borders and inputs */
+    --border: 40 10% 85%;
+    --input: 0 0% 100%;
+    --ring: 43 49% 59%;
 
-    /* Custom Berlin Tech colors */
-    --neon-green: 142 70% 50%;
-    --electric-purple: 270 70% 60%;
-    --charcoal: 220 20% 10%;
-    --charcoal-light: 220 20% 14%;
+    --radius: 0.25rem;
+
+    /* Custom MeetSpark tokens */
+    --gold: 43 49% 59%;
+    --gold-dark: 43 49% 50%;
+    --cream: 40 33% 97%;
+    --charcoal: 0 0% 17%;
+    --mid-gray: 0 0% 42%;
   }
 }
 
@@ -53,62 +66,76 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
   }
+  
+  /* Serif headlines */
+  h1, h2, .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
 }
 
 @layer components {
+  /* Gold glow effect */
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(43 49% 59% / 0.3),
+                0 0 40px hsl(43 49% 59% / 0.15);
+  }
+
+  /* Legacy purple glow - now gold */
   .glow-purple {
-    box-shadow: 0 0 20px hsl(270 70% 60% / 0.4),
-                0 0 40px hsl(270 70% 60% / 0.2);
+    box-shadow: 0 0 20px hsl(43 49% 59% / 0.3),
+                0 0 40px hsl(43 49% 59% / 0.15);
   }
 
+  /* Legacy green glow - now gold */
   .glow-green {
-    box-shadow: 0 0 20px hsl(142 70% 50% / 0.4),
-                0 0 40px hsl(142 70% 50% / 0.2);
+    box-shadow: 0 0 20px hsl(43 49% 59% / 0.3),
+                0 0 40px hsl(43 49% 59% / 0.15);
   }
 
+  /* Gradient border - now gold */
   .gradient-border {
-    background: linear-gradient(135deg, hsl(270 70% 60%) 0%, hsl(142 70% 50%) 100%);
+    background: linear-gradient(135deg, hsl(43 49% 59%) 0%, hsl(43 49% 50%) 100%);
     padding: 1px;
   }
 
   .gradient-border-inner {
-    background: hsl(220 20% 10%);
+    background: hsl(0 0% 100%);
   }
 
+  /* Text gradient - now gold */
   .text-gradient {
-    background: linear-gradient(135deg, hsl(270 70% 60%) 0%, hsl(142 70% 50%) 100%);
+    background: linear-gradient(135deg, hsl(0 0% 17%) 0%, hsl(43 49% 59%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
+  /* Pulse glow - now gold */
   .pulse-glow {
     animation: pulseGlow 2s ease-in-out infinite;
   }
 
   @keyframes pulseGlow {
     0%, 100% {
-      box-shadow: 0 0 20px hsl(270 70% 60% / 0.3),
-                  0 0 40px hsl(270 70% 60% / 0.1);
+      box-shadow: 0 0 20px hsl(43 49% 59% / 0.2),
+                  0 0 40px hsl(43 49% 59% / 0.1);
     }
     50% {
-      box-shadow: 0 0 30px hsl(270 70% 60% / 0.5),
-                  0 0 60px hsl(270 70% 60% / 0.3);
+      box-shadow: 0 0 30px hsl(43 49% 59% / 0.35),
+                  0 0 60px hsl(43 49% 59% / 0.2);
     }
   }
 
-  .scan-line {
-    animation: scanLine 3s ease-in-out infinite;
+  /* Selection button styles for forms */
+  .select-button {
+    @apply w-full text-left p-3 rounded border transition-all duration-200;
   }
-
-  @keyframes scanLine {
-    0%, 100% {
-      transform: translateY(-100%);
-      opacity: 0;
-    }
-    50% {
-      transform: translateY(100%);
-      opacity: 1;
-    }
+  
+  .select-button-default {
+    @apply border-border bg-transparent hover:border-primary/50;
+  }
+  
+  .select-button-selected {
+    @apply border-primary bg-primary text-primary-foreground;
   }
 }
