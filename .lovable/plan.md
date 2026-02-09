@@ -1,302 +1,200 @@
 
-# MeetSpark Bold Transformation - Phase 3c: Make It Unmissable
+
+# Name-Based Role Logic: Organizer vs. Participant
 
 ## Overview
 
-This phase takes the current subtle design and transforms it into a **bold, unmissable visual statement**. The current implementation has decorative elements at 10-12% opacity that are nearly invisible. This transformation cranks everything up to create immediate visual impact.
+This plan implements a name-based identity system where Organizers and Participants get different views and permissions -- without formal authentication. Identity is determined by matching a locally-stored name against database records.
 
-## Current State Analysis
+## Current State
 
-| Element | Current State | Problem |
-|---------|--------------|---------|
-| Network Background | 10-12% opacity | Invisible |
-| Corner Brackets | 60-80px, 15% opacity | Too small and faint |
-| Sparkle Accents | 12-16px, 40% opacity | Barely visible |
-| Feature Layout | Slight staggering | Not dramatic enough |
-| Event List | Subtle alternating indents | Barely noticeable |
-| Typography | Standard sizing | No visual hierarchy drama |
+- No authentication or identity system exists
+- Dashboard shows ALL events (no filtering by creator)
+- Events table has no `creator_name` field
+- Participants register via `/register/:shareCode` and are stored in localStorage per event
+- No permission checks on organizer-only actions (edit, manage, settings)
+
+## Data Structure Changes
+
+### Database Migration: Add `creator_name` to events table
+
+```sql
+ALTER TABLE public.events ADD COLUMN creator_name text;
+```
+
+This column stores the name of the organizer who created the event. Existing events will have `NULL` for this field (they'll be visible to all organizers until updated).
+
+---
 
 ## Implementation Plan
 
-### 1. Create New Bold Decorative Components
+### 1. Organizer Identity Entry (Landing Page Update)
 
-**New File: `src/components/BoldDecorations.tsx`**
+**File: `src/pages/Index.tsx`**
 
-Create large, visible decorative SVG elements:
+- Update the "Create Your Event" CTA to link to `/dashboard` (already does this)
+- No separate organizer form needed on landing -- the identity prompt happens on the Dashboard
 
-```text
-┌─────────────────────────────────────────┐
-│  LargeSparkle (120-150px)               │
-│  - Gold color at 35-40% opacity         │
-│  - 4-point star shape (MeetSpark brand) │
-│                                         │
-│  NetworkCluster (100-120px)             │
-│  - 5-7 connected nodes with lines       │
-│  - Charcoal at 30% opacity              │
-│                                         │
-│  OrbitalDecoration (300-400px)          │
-│  - Large orbital rings with nodes       │
-│  - For hero section background          │
-│                                         │
-│  LargeBracket (150-180px)               │
-│  - Thicker 2px lines                    │
-│  - 25-30% opacity                       │
-│                                         │
-│  CircleDivider (250-300px width)        │
-│  - Row of connected circles             │
-│  - Geometric section separator          │
-└─────────────────────────────────────────┘
+### 2. Dashboard: Organizer Name Prompt + Filtered View
+
+**File: `src/pages/Dashboard.tsx`**
+
+**On first visit:**
+- Check `localStorage.getItem('organizerName')`
+- If not set, show a name entry form: "Enter your name to manage events"
+- Store the entered name in `localStorage` as `organizerName`
+- Show a "Change Identity" text link in the header to switch names
+
+**Event Creation:**
+- When creating an event, include `creator_name` from `localStorage.getItem('organizerName')` in the insert
+
+**Event Filtering:**
+- Fetch only events where `creator_name` matches the stored organizer name
+- Query: `.eq('creator_name', organizerName)`
+- Fallback: Also show events with `creator_name = null` (legacy events)
+
+**Header Update:**
+- Show "Logged in as: [Name]" with a small "Change" link
+- "Change" clears `organizerName` from localStorage and re-prompts
+
+### 3. Participant Flow (Already Mostly Working)
+
+**File: `src/pages/PublicRegister.tsx`** -- Minimal changes needed
+
+- Already collects participant name and stores in `localStorage` as `currentUser_{eventId}`
+- After registration, redirects to `/event/{eventId}` where participant sees the event detail
+
+**File: `src/pages/EventDetail.tsx`** -- Add permission checks
+
+- Determine user role by checking:
+  1. Is `localStorage.getItem('organizerName')` set AND does it match `event.creator_name`? --> Organizer view
+  2. Is `localStorage.getItem('currentUser_{eventId}')` set? --> Participant view
+  3. Neither? --> Read-only / prompt to register
+
+### 4. Permission-Based UI in EventDetail
+
+**File: `src/pages/EventDetail.tsx`**
+
+**Organizer View (full access):**
+- Show all tabs (AI Matching, Requests, Participants)
+- Show "Copy Link" button
+- Show event management actions
+- Can trigger AI matching for all participants
+
+**Participant View (limited):**
+- Show AI Matching tab (personal matches only -- already works this way)
+- Show Requests tab (their own requests)
+- Show Participants tab (read-only list)
+- Hide "Copy Link" and management actions
+- Event details shown as read-only text
+
+**Implementation approach:**
+```tsx
+const isOrganizer = (() => {
+  const orgName = localStorage.getItem('organizerName');
+  return orgName && event?.creator_name && 
+    orgName.toLowerCase() === event.creator_name.toLowerCase();
+})();
 ```
 
-### 2. Transform Landing Page (Index.tsx)
+### 5. Participant Dashboard View
 
-**Hero Section - Add Dramatic Elements:**
+**New consideration:** Currently participants go directly to `/event/{eventId}`. For a participant to see "all their events," we need a way to look up events by participant name.
 
-```text
-                              ┌───┐ Large Bracket (150px)
-                              │   │ rotated, 25% opacity
-                        ┌─────┘   │
-                        │         │
-    ✦ Large Sparkle (120px)       │
-       Gold, 35% opacity          │
-                                  │
-  "Make Networking"               │
-  "Actually Work" ← 20% LARGER    │
-                                  │
-  [Description text]              │
-                                  │
-  Create Your Event →             │
-                                  │
-                    ○─○─○ Orbital Network
-                   ○ │   ○  (350px)
-                    ○─○─○   Right side
-                              25% opacity
-```
+**Approach:** Add a "My Events" section to the Dashboard when an organizer name is NOT set but participant registrations exist:
 
-**Features Section - Dramatic Diagonal Flow:**
+- Scan localStorage for all `currentUser_*` keys
+- Extract event IDs from those keys
+- Fetch those events from the database
+- Display as a simpler read-only list (no "Create Event" or management actions)
 
-```text
-   ◇ Shareable Forms                    (LEFT: 8%)
-     64px icon                          (TOP: 0)
-     "Shareable Forms" 24px
-     Description text
-            ╲
-             ╲ Connecting line (dashed, 2px)
-              ╲
-               ◎ AI Matching            (LEFT: 48%)
-                 80px icon - LARGER     (TOP: 220px)
-                 "AI Matching" 28px
-                 Description text
-                      ╲
-                       ╲
-                        ╲
-                         ☀ Meeting Req   (LEFT: 72%)
-                           56px icon     (TOP: 100px)
-                           24px heading
-                           Description
-
-   ● ● ● ● ● ● ● Circle Divider (280px)
-```
-
-**Visual Changes:**
-- Feature 1: `left-[8%]`, icon 64px
-- Feature 2: `left-[48%]`, `top-[220px]`, icon 80px (LARGER - hero feature)
-- Feature 3: `left-[72%]`, `top-[100px]`, icon 56px
-- Add connecting dashed lines between icons
-- Increase section spacing to `mb-56 md:mb-72`
-- Add scattered sparkle accents (32px) around features
-
-### 3. Transform Dashboard (Dashboard.tsx)
-
-**Add Bold Visual Timeline:**
-
-```text
-    ╔══════════════════════════════════════╗
-    ║  Your Events      ┌────────────┐     ║
-    ║                   │ Large      │     ║
-    ║                   │ Bracket    │     ║
-    ╚══════════════════╝ (150px)    └─────╝
-
-    ┃                    
-    ┃ ● ✦ BTU Meet up 13           (indent: 24px)
-    ┃     Date | 8 participants
-    ┃     Copy Link  Manage →
-    ┃
-    ┃────────────────────────
-    ┃                    
-    ┃      ● ✦ AI HackDay Berlin   (indent: 120px - DRAMATIC)
-    ┃           Date | Location
-    ┃           Copy Link  Manage →
-    ┃
-    ┃────────────────────────
-    ┃
-    ┃ ● ✦ Another Event            (indent: 48px)
-```
-
-**Visual Changes:**
-- Increase timeline line from 1px to 3px, opacity to 30%
-- Add sparkle icons (24px) next to each event title
-- Dramatic zig-zag indent pattern: 24px → 120px → 48px → 100px
-- Larger spacing between events (96px instead of current ~64px)
-- Larger corner bracket (150px) with 2px stroke
-
-### 4. Transform Event Detail (EventDetail.tsx)
-
-**Add Visual Interest to Tab Content:**
-
-```text
-    Event Header with SparkleAccent (32px)
-    
-    ┃  AI Matching | Requests | Participants
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    ┃
-    ┃  [Content with enhanced spacing]
-    ┃
-    ┃  ✦ Match cards with alternating
-    ┃    dramatic indents
-    ┃
-    ┃
-                              ┌────────┐
-                              │ Corner │
-                              │Bracket │
-                              │(120px) │
-                              └────────┘
-```
-
-### 5. Enhanced Network Background
-
-**Update `NetworkBackground.tsx`:**
-
-Make the background MORE visible and prominent:
-- Increase all node sizes by 50-100%
-- Thicken connecting lines to 1.5px
-- Increase overall element opacity within the SVG
-- Add more dense node clustering in key areas
-- The parent container opacity will be increased to 25-30%
-
-### 6. Update DecorativeLines.tsx
-
-**Enhance Existing Components:**
-
-```typescript
-// CornerBracket: 
-// - Default size: 80 → 150
-// - Stroke width: 1 → 2
-// - Opacity: 0.15 → 0.30
-
-// SparkleAccent:
-// - Default size: 16 → 32
-// - Opacity: 0.4 → 0.6
-// - Add gold color variant
-
-// Add new LargeSparkle component (120px)
-// Add new NetworkCluster component (100px)
-// Add new CircleDivider component
-```
-
-### 7. Typography Enhancements
-
-**index.css Updates:**
-
-```css
-/* Larger hero emphasis */
-.text-hero-emphasis {
-  font-size: 1.2em;  /* 20% larger than parent */
-  display: block;
-}
-
-/* Bold section headers */
-.text-section-header {
-  font-size: 1.75rem;  /* 28px */
-  letter-spacing: -0.02em;
-}
-```
-
-**Component Updates:**
-- Hero "Actually Work" line: Add `text-[1.2em]` or custom class to make it 20% larger
-- Feature headings: Increase from 20px → 24-28px
-- Section titles: Increase to 28px
-
-### 8. Color & Opacity Adjustments
-
-**Layered Depth System:**
-
-| Layer | Opacity | Use Case |
-|-------|---------|----------|
-| Foreground | 50-60% | Large sparkles, primary decorations |
-| Mid-ground | 30-40% | Network clusters, brackets |
-| Background | 20-25% | Full-page network SVG |
-
-**Gold Usage Expansion:**
-- Large sparkle accents: Gold at 40% opacity
-- Connecting lines between features: Gold at 25% opacity
-- Section dividers: Gold circles
+**OR simpler approach:** Add a participant entry point on the Dashboard:
+- If no `organizerName` is set, show two options:
+  - "I'm an Organizer" --> Name entry form, then organizer dashboard
+  - "I'm a Participant" --> Name entry, then show events where their name exists in registrations
 
 ---
 
-## File Changes Summary
+## Detailed File Changes
 
 | File | Changes |
 |------|---------|
-| `src/components/BoldDecorations.tsx` | **NEW** - Large sparkle, network cluster, orbital decoration, circle divider |
-| `src/components/NetworkBackground.tsx` | Enhance - Bigger nodes, thicker lines, more elements |
-| `src/components/icons/DecorativeLines.tsx` | Enhance - Larger defaults, thicker strokes, higher opacity |
-| `src/pages/Index.tsx` | Major - Add all bold decorations, dramatic feature layout, larger typography |
-| `src/pages/Dashboard.tsx` | Major - Bold timeline, sparkle accents, dramatic event indents |
-| `src/pages/EventDetail.tsx` | Enhance - Larger decorative elements, more visible accents |
-| `src/index.css` | Add typography classes for hero emphasis and section headers |
+| **Database** | Add `creator_name` text column to `events` table |
+| `src/pages/Dashboard.tsx` | Add organizer name prompt, filter events by creator_name, save creator_name on event creation, add role selection (organizer vs participant), participant event list |
+| `src/pages/EventDetail.tsx` | Add `isOrganizer` check, conditionally show/hide management UI, make participant view read-only |
+| `src/pages/Index.tsx` | Minor: Update CTA links if needed for role split |
+| `src/components/AIMatchingPanel.tsx` | Pass `isOrganizer` prop to control "generate matches for all" vs "find my matches" |
+| `src/components/ParticipantCard.tsx` | Hide "Meet" action for organizers (they're not participants) |
 
 ---
 
-## Visual Comparison
+## User Flow Summary
 
-**Before (Current State):**
-```
-Clean but forgettable. Decorations are invisible.
-Standard web app layout. Could be any SaaS product.
+```text
+Landing Page (/)
+    |
+    v
+Dashboard (/dashboard)
+    |
+    +-- No identity stored?
+    |       |
+    |       v
+    |   "Who are you?" prompt
+    |       |
+    |       +-- "I'm an Organizer" --> Enter name --> See YOUR events
+    |       |
+    |       +-- "I'm a Participant" --> Enter name --> See events you're registered for
+    |
+    +-- Organizer identity stored?
+    |       |
+    |       v
+    |   Filtered event list (creator_name matches)
+    |   Can create events, manage, copy links
+    |
+    +-- Participant identity stored?
+            |
+            v
+        Read-only event list (events where name is in registrations)
+        Click event --> EventDetail (participant view)
 ```
 
-**After (Phase 3c):**
-```
-✦ Large gold sparkle in hero
-Dramatic diagonal feature flow with connecting lines
-│
-│ ● Bold timeline with zig-zag event layout
-│
-Orbital network clearly visible behind content
-Large corner brackets framing sections
-○─○─○─○─○ Geometric circle dividers
-```
+---
+
+## Permission Matrix
+
+| Action | Organizer | Participant |
+|--------|-----------|-------------|
+| Create Event | Yes | No |
+| Edit Event Details | Yes | No |
+| Copy Share Link | Yes | No |
+| View Participants List | Yes | Yes (read-only) |
+| Trigger AI Matching (all) | Yes | No |
+| Find My Matches | No (not a participant) | Yes |
+| Send Meeting Requests | No | Yes |
+| Accept/Decline Requests | No | Yes |
+| View Event Info | Yes (full) | Yes (read-only) |
+| Switch Role | Yes (via "Change" link) | Yes (via "Change" link) |
+
+---
+
+## Edge Cases Handled
+
+- **Same name, different people:** This is a known limitation of name-based matching. Names are compared case-insensitively. Users are informed this is not secure authentication.
+- **Organizer who is also a participant:** They can switch roles via the dashboard. When viewing as organizer, they see management. When registered as participant, they see matches.
+- **Legacy events (no creator_name):** Shown to all organizers with a note "unclaimed event."
+- **Name changes:** If an organizer changes their stored name, they lose access to previously created events. A warning is shown before changing.
 
 ---
 
 ## Testing Checklist
 
-- [ ] Large sparkle (120px) visible in hero - UNMISSABLE
-- [ ] Network background at 25%+ opacity - CLEARLY VISIBLE
-- [ ] Features in dramatic diagonal layout with 200px+ vertical offset
-- [ ] Connecting lines between feature icons visible
-- [ ] Dashboard events have dramatic zig-zag indent (24px to 120px)
-- [ ] Sparkle accents next to event titles
-- [ ] Corner brackets are large (150px) and visible
-- [ ] "Actually Work" text noticeably larger than "Make Networking"
-- [ ] All functionality still works
-- [ ] Mobile responsive (simplified but still bold)
+- [ ] Dashboard shows role selection prompt on first visit
+- [ ] Organizer can enter name and see only their events
+- [ ] Creating an event saves `creator_name` correctly
+- [ ] Participant can enter name and see their registered events
+- [ ] EventDetail hides management UI for participants
+- [ ] EventDetail shows full controls for organizers
+- [ ] "Change Identity" works and re-prompts
+- [ ] Existing events (without creator_name) are handled gracefully
+- [ ] Mobile responsive for the role selection prompt
 
----
-
-## Expected Result
-
-People will immediately notice:
-- "Wow, that's a huge gold sparkle"
-- "The features flow in a unique diagonal pattern"
-- "There's a beautiful network illustration behind everything"
-- "The timeline on the dashboard is so distinctive"
-- "This doesn't look like any other event platform"
-
-The design will feel:
-✅ Bold and confident
-✅ Architecturally sophisticated
-✅ Impossible to ignore
-✅ Memorable and distinctive
-✅ Still usable and readable
