@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ interface Event {
   share_code: string;
   organizer_code: string;
   networking_duration: number;
+  creator_name: string | null;
 }
 
 interface Participant {
@@ -70,6 +71,13 @@ export default function EventDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { unreadCounts, markRequestSeen, markMessagesRead, refreshCounts } = useNotifications(eventId || "", currentUser?.id);
+
+  // Determine if current viewer is the organizer
+  const isOrganizer = useMemo(() => {
+    const orgName = localStorage.getItem("organizerName");
+    if (!orgName || !event?.creator_name) return false;
+    return orgName.toLowerCase() === event.creator_name.toLowerCase();
+  }, [event]);
 
   // Load current user from localStorage
   useEffect(() => {
@@ -123,7 +131,7 @@ export default function EventDetail() {
       return;
     }
 
-    setEvent(eventData);
+    setEvent(eventData as any);
     await fetchParticipants();
     setIsLoading(false);
   };
@@ -153,7 +161,6 @@ export default function EventDetail() {
     });
   };
 
-  // Dramatic zig-zag indent pattern for participants
   const getParticipantIndent = (index: number) => {
     const pattern = [0, 80, 24, 100, 40, 72];
     return pattern[index % pattern.length];
@@ -171,7 +178,7 @@ export default function EventDetail() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <h2 className="font-serif text-xl font-medium text-foreground mb-4">Event not found</h2>
-        <Link 
+        <Link
           to="/dashboard"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
         >
@@ -193,17 +200,16 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Network Background - BOLD 25% opacity */}
       <div className="fixed inset-0 z-0 pointer-events-none text-charcoal opacity-[0.25]">
         <NetworkBackground />
       </div>
 
       <div className="relative z-10">
-        {/* Header - minimal */}
+        {/* Header */}
         <header className="py-6">
           <div className="container mx-auto px-6 md:px-12">
             <div className="flex items-center gap-4">
-              <Link 
+              <Link
                 to="/dashboard"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -231,45 +237,55 @@ export default function EventDetail() {
                       <Clock className="w-3 h-3" />
                       {event.networking_duration} min meetings
                     </span>
+                    {!isOrganizer && currentUser && (
+                      <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                        Participant
+                      </Badge>
+                    )}
+                    {isOrganizer && (
+                      <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                        Organizer
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
-              {/* Copy Link as icon-only action */}
-              <button 
-                onClick={copyShareLink} 
-                className="text-muted-foreground hover:text-foreground transition-colors p-2"
-                title="Copy registration link"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
+              {/* Copy Link - organizer only */}
+              {isOrganizer && (
+                <button
+                  onClick={copyShareLink}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-2"
+                  title="Copy registration link"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </header>
 
         {/* Main Content */}
         <main className="container mx-auto px-6 md:px-12 py-8 relative">
-          {/* LARGE decorative corner bracket - bottom right */}
-          <LargeBracketFlipped 
-            className="hidden md:block absolute bottom-4 right-4 text-charcoal" 
-            size={120} 
+          <LargeBracketFlipped
+            className="hidden md:block absolute bottom-4 right-4 text-charcoal"
+            size={120}
           />
-          {/* Network cluster decoration */}
-          <NetworkCluster 
-            className="hidden lg:block absolute right-24 top-20 text-charcoal" 
-            size={70} 
+          <NetworkCluster
+            className="hidden lg:block absolute right-24 top-20 text-charcoal"
+            size={70}
           />
-          
+
           <Tabs defaultValue="ai-match" className="space-y-8">
             <TabsList className="bg-transparent border-b border-border/50 rounded-none w-full justify-start gap-6 p-0 h-auto">
-              <TabsTrigger 
-                value="ai-match" 
+              <TabsTrigger
+                value="ai-match"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground"
               >
                 <OverlappingCirclesIcon className="w-4 h-4 mr-2" size={16} />
                 AI Matching
               </TabsTrigger>
-              <TabsTrigger 
-                value="meetings" 
+              <TabsTrigger
+                value="meetings"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground relative"
               >
                 <MessageSquare className="w-4 h-4 mr-2" />
@@ -280,8 +296,8 @@ export default function EventDetail() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="participants" 
+              <TabsTrigger
+                value="participants"
                 className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground"
               >
                 <Users className="w-4 h-4 mr-2" />
@@ -290,13 +306,18 @@ export default function EventDetail() {
             </TabsList>
 
             <TabsContent value="ai-match" className="mt-8">
-              <AIMatchingPanel eventId={event.id} participants={participants} currentUser={currentUser} />
+              <AIMatchingPanel
+                eventId={event.id}
+                participants={participants}
+                currentUser={currentUser}
+                isOrganizer={isOrganizer}
+              />
             </TabsContent>
 
             <TabsContent value="meetings" className="mt-8">
-              <MeetingRequestsList 
-                eventId={event.id} 
-                participants={participants} 
+              <MeetingRequestsList
+                eventId={event.id}
+                participants={participants}
                 currentUserId={currentUser?.id}
                 onMarkRequestSeen={markRequestSeen}
                 onMarkMessagesRead={markMessagesRead}
@@ -309,18 +330,19 @@ export default function EventDetail() {
                   <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-serif text-xl font-medium text-foreground mb-2">No participants yet</h3>
                   <p className="text-muted-foreground mb-8">Share the registration link to get participants</p>
-                  <button 
-                    onClick={copyShareLink} 
-                    className="text-link-cta"
-                  >
-                    <Copy className="w-5 h-5" />
-                    Copy Registration Link
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  {isOrganizer && (
+                    <button
+                      onClick={copyShareLink}
+                      className="text-link-cta"
+                    >
+                      <Copy className="w-5 h-5" />
+                      Copy Registration Link
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Search Input */}
                   <div className="relative max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -330,29 +352,27 @@ export default function EventDetail() {
                       className="pl-10 bg-transparent border-border focus:border-primary"
                     />
                   </div>
-                  
-                  {/* Filtered Participants List with DRAMATIC zig-zag indents */}
+
                   {filteredParticipants.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       No participants found matching "{searchQuery}"
                     </div>
                   ) : (
                     <div className="space-y-0 relative">
-                      {/* Bold vertical timeline */}
                       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-charcoal/25 hidden md:block" />
-                      
+
                       {filteredParticipants.map((participant, index) => (
-                        <div 
+                        <div
                           key={participant.id}
                           className="relative py-2"
                           style={{ paddingLeft: `${getParticipantIndent(index)}px` }}
                         >
-                          {/* Timeline node */}
                           <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[5px] w-[11px] h-[11px] rounded-full border-2 border-charcoal/30 bg-background" />
                           <ParticipantCard
                             participant={participant}
                             eventId={event.id}
                             currentUserId={currentUser?.id}
+                            isOrganizer={isOrganizer}
                             compact
                           />
                         </div>

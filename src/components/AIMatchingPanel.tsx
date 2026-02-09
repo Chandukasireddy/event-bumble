@@ -67,9 +67,10 @@ interface AIMatchingPanelProps {
   eventId: string;
   participants: Participant[];
   currentUser: CurrentUser | null;
+  isOrganizer?: boolean;
 }
 
-export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchingPanelProps) {
+export function AIMatchingPanel({ eventId, participants, currentUser, isOrganizer = false }: AIMatchingPanelProps) {
   const storageKey = `ai-matches-${eventId}-${currentUser?.id || 'anon'}`;
   
   // Track participants we already have requests with
@@ -359,9 +360,11 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
           AI-Powered Matching
         </h2>
         <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
-          {currentUser 
-            ? `Finding the best people for you to meet at this event`
-            : `Let AI analyze participant profiles and suggest optimal networking pairs`
+          {isOrganizer
+            ? `Let AI analyze participant profiles and suggest optimal networking pairs`
+            : currentUser 
+              ? `Finding the best people for you to meet at this event`
+              : `Let AI analyze participant profiles and suggest optimal networking pairs`
           }
         </p>
         
@@ -385,7 +388,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchi
           ) : (
             <>
               <SparkleIcon className="text-primary" size={20} />
-              {currentUser ? "Find My Matches" : "Generate AI Matches"}
+              {isOrganizer ? "Generate AI Matches" : currentUser ? "Find My Matches" : "Generate AI Matches"}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </>
           )}
