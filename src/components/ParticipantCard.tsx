@@ -36,6 +36,7 @@ interface ParticipantCardProps {
   isSelected?: boolean;
   currentUserId?: string;
   compact?: boolean;
+  isOrganizer?: boolean;
 }
 
 export function ParticipantCard({
@@ -45,6 +46,7 @@ export function ParticipantCard({
   isSelected,
   currentUserId,
   compact = false,
+  isOrganizer = false,
 }: ParticipantCardProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [message, setMessage] = useState("");
@@ -169,7 +171,7 @@ export function ParticipantCard({
             >
               <ExternalLink className="w-3 h-3" />
             </button>
-            {!isMe && (
+            {!isOrganizer && !isMe && (
               requestStatus === "accepted" ? (
                 <span className="text-xs text-success flex items-center gap-1">
                   <Check className="w-3 h-3" />
@@ -273,7 +275,7 @@ export function ParticipantCard({
             <ExternalLink className="w-4 h-4" />
           </button>
 
-          {currentUserId && currentUserId !== participant.id && (
+          {!isOrganizer && currentUserId && currentUserId !== participant.id && (
             requestStatus === "accepted" ? (
               <span className="text-xs text-success flex items-center gap-1">
                 <Check className="w-4 h-4" />
