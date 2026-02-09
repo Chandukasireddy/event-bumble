@@ -153,7 +153,7 @@ export default function EventDetail() {
 
   const copyShareLink = () => {
     if (!event) return;
-    const link = `${window.location.origin}/register/${event.share_code}`;
+    const link = `https://meetspark.lovable.app/register/${event.share_code}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copied!",
