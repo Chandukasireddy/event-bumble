@@ -250,16 +250,14 @@ export default function EventDetail() {
                   </div>
                 </div>
               </div>
-              {/* Copy Link - organizer only */}
-              {isOrganizer && (
-                <button
-                  onClick={copyShareLink}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-2"
-                  title="Copy registration link"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              )}
+              {/* Copy Link - available to everyone */}
+              <button
+                onClick={copyShareLink}
+                className="text-muted-foreground hover:text-foreground transition-colors p-2"
+                title="Copy registration link"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </header>

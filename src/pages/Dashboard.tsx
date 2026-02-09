@@ -560,15 +560,13 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex gap-4 items-center ml-8 md:ml-0">
-                      {role === "organizer" && (
-                        <button
-                          onClick={() => copyShareLink(event.share_code)}
-                          className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                        >
-                          <Copy className="w-3 h-3" />
-                          Copy Link
-                        </button>
-                      )}
+                      <button
+                        onClick={() => copyShareLink(event.share_code)}
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copy Link
+                      </button>
                       <Link
                         to={`/event/${event.id}`}
                         className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
