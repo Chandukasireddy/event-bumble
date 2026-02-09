@@ -238,7 +238,7 @@ export default function Dashboard() {
   };
 
   const copyShareLink = (shareCode: string) => {
-    const link = `${window.location.origin}/register/${shareCode}`;
+    const link = `https://meetspark.lovable.app/register/${shareCode}`;
     navigator.clipboard.writeText(link);
     toast({ title: "Link copied!", description: link });
   };
