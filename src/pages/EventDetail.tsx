@@ -13,6 +13,7 @@ import {
   Clock,
   Search,
   ArrowRight,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { ParticipantCard } from "@/components/ParticipantCard";
 import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
+import { FormBuilder } from "@/components/FormBuilder";
 import { SparkleIcon, OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
 import { CornerBracketFlipped, MediumSparkle } from "@/components/icons/DecorativeLines";
@@ -301,6 +303,15 @@ export default function EventDetail() {
                 <Users className="w-4 h-4 mr-2" />
                 Participants ({participants.length})
               </TabsTrigger>
+              {isOrganizer && (
+                <TabsTrigger
+                  value="survey"
+                  className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground"
+                >
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Survey
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="ai-match" className="mt-8">
@@ -380,6 +391,16 @@ export default function EventDetail() {
                 </div>
               )}
             </TabsContent>
+
+            {isOrganizer && (
+              <TabsContent value="survey" className="mt-8">
+                <FormBuilder
+                  eventId={event.id}
+                  eventName={event.name}
+                  eventDescription={event.description}
+                />
+              </TabsContent>
+            )}
           </Tabs>
         </main>
       </div>

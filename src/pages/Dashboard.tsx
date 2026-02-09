@@ -116,9 +116,9 @@ export default function Dashboard() {
       return;
     }
 
-    // Filter: show events where creator_name matches (case-insensitive) or is null (legacy)
+    // Filter: show only events created by this organizer
     const filtered = (eventsData || []).filter((e: any) => {
-      if (!e.creator_name) return true; // legacy unclaimed events
+      if (!e.creator_name) return false;
       return e.creator_name.toLowerCase() === userName.toLowerCase();
     });
 
