@@ -43,9 +43,9 @@ export default function Dashboard() {
   const [newEvent, setNewEvent] = useState({
     name: "",
     description: "",
-    event_date: "",
+    start_datetime: "",
+    end_datetime: "",
     location: "",
-    networking_duration: 5,
   });
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
@@ -220,10 +220,10 @@ export default function Dashboard() {
     const { error } = await supabase.from("events").insert({
       name: newEvent.name,
       description: newEvent.description || null,
-      event_date: newEvent.event_date || null,
+      start_datetime: newEvent.start_datetime || null,
+      end_datetime: newEvent.end_datetime || null,
       location: newEvent.location || null,
-      networking_duration: newEvent.networking_duration,
-      creator_name: userName, // Save organizer name
+      creator_name: userName,
     } as any);
 
     if (error) {
@@ -231,7 +231,7 @@ export default function Dashboard() {
     } else {
       toast({ title: "Event created!", description: "Share the registration link with participants" });
       setShowCreateDialog(false);
-      setNewEvent({ name: "", description: "", event_date: "", location: "", networking_duration: 5 });
+      setNewEvent({ name: "", description: "", start_datetime: "", end_datetime: "", location: "" });
       fetchOrganizerEvents();
     }
     setIsCreating(false);
@@ -394,28 +394,28 @@ export default function Dashboard() {
                           className="bg-input border-border focus:border-primary"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="event-date">Date</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="event-start" className="text-xs font-semibold text-foreground">Event Start</Label>
                           <Input
-                            id="event-date"
-                            type="date"
-                            value={newEvent.event_date}
-                            onChange={(e) => setNewEvent({ ...newEvent, event_date: e.target.value })}
+                            id="event-start"
+                            type="datetime-local"
+                            value={newEvent.start_datetime}
+                            onChange={(e) => setNewEvent({ ...newEvent, start_datetime: e.target.value })}
                             className="bg-input border-border focus:border-primary"
                           />
+                          <p className="text-[11px] text-muted-foreground">Optional</p>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="event-duration">Meeting Duration (min)</Label>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="event-end" className="text-xs font-semibold text-foreground">Event End</Label>
                           <Input
-                            id="event-duration"
-                            type="number"
-                            min="1"
-                            max="30"
-                            value={newEvent.networking_duration}
-                            onChange={(e) => setNewEvent({ ...newEvent, networking_duration: parseInt(e.target.value) || 5 })}
+                            id="event-end"
+                            type="datetime-local"
+                            value={newEvent.end_datetime}
+                            onChange={(e) => setNewEvent({ ...newEvent, end_datetime: e.target.value })}
                             className="bg-input border-border focus:border-primary"
                           />
+                          <p className="text-[11px] text-muted-foreground">Optional</p>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -544,10 +544,10 @@ export default function Dashboard() {
                         <p className="text-sm text-muted-foreground mb-3 line-clamp-1 ml-8">{event.description}</p>
                       )}
                       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground ml-8">
-                        {event.event_date && (
+                        {(event as any).start_datetime && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {new Date(event.event_date).toLocaleDateString()}
+                            {new Date((event as any).start_datetime).toLocaleDateString()}
                           </span>
                         )}
                         {event.location && (

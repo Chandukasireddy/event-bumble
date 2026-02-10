@@ -32,6 +32,8 @@ interface Event {
   name: string;
   description: string | null;
   event_date: string | null;
+  start_datetime: string | null;
+  end_datetime: string | null;
   location: string | null;
   share_code: string;
   organizer_code: string;
@@ -223,10 +225,18 @@ export default function EventDetail() {
                 <div className="flex-1">
                   <h1 className="font-serif text-xl font-medium text-foreground">{event.name}</h1>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                    {event.event_date && (
+                    {(event.start_datetime || event.event_date) && (
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {new Date(event.event_date).toLocaleDateString()}
+                        {event.start_datetime
+                          ? new Date(event.start_datetime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+                          : new Date(event.event_date!).toLocaleDateString()}
+                      </span>
+                    )}
+                    {event.end_datetime && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Ends {new Date(event.end_datetime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                       </span>
                     )}
                     {event.location && (
@@ -235,10 +245,6 @@ export default function EventDetail() {
                         {event.location}
                       </span>
                     )}
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {event.networking_duration} min meetings
-                    </span>
                     {!isOrganizer && currentUser && (
                       <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
                         Participant
