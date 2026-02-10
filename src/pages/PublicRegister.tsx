@@ -141,6 +141,7 @@ export default function PublicRegister() {
   const [nameSuggestions, setNameSuggestions] = useState<ExistingRegistration[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedExisting, setSelectedExisting] = useState<ExistingRegistration | null>(null);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Default form fields
@@ -185,6 +186,34 @@ export default function PublicRegister() {
     }
 
     setEvent(data);
+
+    // Check localStorage for returning participant
+    const storedParticipant = localStorage.getItem(`meetspark_participant_${data.id}`);
+    if (storedParticipant) {
+      try {
+        const parsed = JSON.parse(storedParticipant);
+        if (parsed.participantId && parsed.eventId === data.id) {
+          // Verify participant still exists in DB
+          const { data: regCheck } = await supabase
+            .from("registrations")
+            .select("id, name")
+            .eq("id", parsed.participantId)
+            .eq("event_id", data.id)
+            .maybeSingle();
+          if (regCheck) {
+            // Set currentUser for EventDetail compatibility
+            localStorage.setItem(`currentUser_${data.id}`, JSON.stringify({
+              id: regCheck.id,
+              name: regCheck.name,
+            }));
+            navigate(`/event/${data.id}`);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse stored participant:", e);
+      }
+    }
 
     // Fetch custom questions and registrations in parallel
     const [questionsResult, registrationsResult] = await Promise.all([
@@ -235,7 +264,21 @@ export default function PublicRegister() {
     setSelectedExisting(reg);
     setName(reg.name);
     setShowSuggestions(false);
-    toast({ title: "Profile found!", description: "Complete your details to update your registration" });
+    setShowWelcomeBack(true);
+  };
+
+  const handleGoToDashboard = () => {
+    if (!event || !selectedExisting) return;
+    localStorage.setItem(`currentUser_${event.id}`, JSON.stringify({
+      id: selectedExisting.id,
+      name: selectedExisting.name,
+    }));
+    localStorage.setItem(`meetspark_participant_${event.id}`, JSON.stringify({
+      participantId: selectedExisting.id,
+      name: selectedExisting.name,
+      eventId: event.id,
+    }));
+    navigate(`/event/${event.id}`);
   };
 
   const setCustomResponse = (questionId: string, value: any) => {
@@ -346,6 +389,13 @@ export default function PublicRegister() {
         idealCopilot: idealCopilot || null,
         offscreenLife: offscreenLife || null,
         bio: bio || null,
+      }));
+
+      // Persist for returning participant auto-skip
+      localStorage.setItem(`meetspark_participant_${event.id}`, JSON.stringify({
+        participantId: resultId,
+        name,
+        eventId: event.id,
       }));
 
       toast({
@@ -543,6 +593,33 @@ export default function PublicRegister() {
 
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
+                {showWelcomeBack && selectedExisting ? (
+                  <div className="text-center space-y-4 py-8">
+                    <h3 className="font-serif text-lg text-foreground">
+                      {selectedExisting.name}, welcome back!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Would you like to skip straight to your dashboard?
+                    </p>
+                    <div className="flex items-center justify-center gap-6 pt-4">
+                      <button
+                        type="button"
+                        onClick={handleGoToDashboard}
+                        className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                      >
+                        Go to Dashboard
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowWelcomeBack(false)}
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Re-take survey
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Name with Autocomplete */}
                   <div className="space-y-2 relative" ref={suggestionsRef}>
@@ -686,6 +763,7 @@ export default function PublicRegister() {
                     )}
                   </button>
                 </form>
+                )}
               </CardContent>
             </Card>
           </div>
