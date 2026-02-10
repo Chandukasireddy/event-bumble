@@ -159,39 +159,57 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
   }, [suggestions, storageKey]);
 
   const generateMatches = async () => {
-    // Filter out participants we already have requests with
-    const availableParticipants = participants.filter(
-      p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)
-    );
-    
-    if (availableParticipants.length < 1) {
-      toast({
-        title: "No new matches available",
-        description: "You already have requests with all participants",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (participants.length < 2) {
-      toast({
-        title: "Not enough participants",
-        description: "You need at least 2 participants to generate matches",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const targetUser = currentUser 
-        ? participants.find(p => p.id === currentUser.id) || { ...currentUser, telegram_handle: "" }
-        : null;
+      // Re-fetch fresh participants from database
+      const { data: freshRegistrations, error: fetchError } = await supabase
+        .from("registrations")
+        .select("id, name, role, interests, telegram_handle, vibe, superpower, ideal_copilot, offscreen_life, bio")
+        .eq("event_id", eventId);
+
+      if (fetchError) throw fetchError;
+
+      const freshParticipants: Participant[] = (freshRegistrations || []).map(r => ({
+        id: r.id,
+        name: r.name,
+        role: r.role,
+        interests: r.interests || [],
+        telegram_handle: r.telegram_handle || "",
+        vibe: r.vibe || undefined,
+        superpower: r.superpower || undefined,
+        ideal_copilot: r.ideal_copilot || undefined,
+        offscreen_life: r.offscreen_life || undefined,
+        bio: r.bio || undefined,
+      }));
+
+      const availableParticipants = freshParticipants.filter(
+        p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)
+      );
+
+      if (availableParticipants.length < 1) {
+        toast({
+          title: "No new matches available",
+          description: "You already have requests with all participants",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (freshParticipants.length < 2) {
+        toast({
+          title: "Not enough participants",
+          description: "You need at least 2 participants to generate matches",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       const participantsForAI = currentUser 
-        ? [participants.find(p => p.id === currentUser.id), ...availableParticipants].filter(Boolean)
-        : participants;
+        ? [freshParticipants.find(p => p.id === currentUser.id), ...availableParticipants].filter(Boolean)
+        : freshParticipants;
 
       const { data, error } = await supabase.functions.invoke("ai-matching", {
         body: {
@@ -216,22 +234,22 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       if (data?.suggestions) {
         let mappedSuggestions: MatchSuggestion[] = data.suggestions.map(
           (s: { participant1_id: string; participant2_id: string; reason: string; compatibility_score: number }) => ({
-            participant1: participants.find((p) => p.id === s.participant1_id)!,
-            participant2: participants.find((p) => p.id === s.participant2_id)!,
+            participant1: freshParticipants.find((p) => p.id === s.participant1_id)!,
+            participant2: freshParticipants.find((p) => p.id === s.participant2_id)!,
             reason: s.reason,
             compatibility_score: s.compatibility_score,
           })
         ).filter((s: MatchSuggestion) => s.participant1 && s.participant2);
 
-        if (currentUser) {
-          mappedSuggestions = mappedSuggestions.sort((a, b) => {
-            const aHasUser = a.participant1.id === currentUser.id || a.participant2.id === currentUser.id;
-            const bHasUser = b.participant1.id === currentUser.id || b.participant2.id === currentUser.id;
-            if (aHasUser && !bHasUser) return -1;
-            if (!aHasUser && bHasUser) return 1;
-            return b.compatibility_score - a.compatibility_score;
-          });
+        // Participant-only filtering: keep only matches involving currentUser
+        if (currentUser && !isOrganizer) {
+          mappedSuggestions = mappedSuggestions.filter(s =>
+            s.participant1.id === currentUser.id || s.participant2.id === currentUser.id
+          );
         }
+
+        // Sort by score
+        mappedSuggestions.sort((a, b) => b.compatibility_score - a.compatibility_score);
 
         setSuggestions(mappedSuggestions);
         setHasGenerated(true);
@@ -298,19 +316,28 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
 
   const createMeetingFromSuggestion = async (suggestion: MatchSuggestion) => {
     try {
+      const requesterId = currentUser?.id || suggestion.participant1.id;
+      const targetId = currentUser 
+        ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2.id : suggestion.participant1.id)
+        : suggestion.participant2.id;
+
       const { error } = await supabase.from("meeting_requests").insert({
         event_id: eventId,
-        requester_id: suggestion.participant1.id,
-        target_id: suggestion.participant2.id,
+        requester_id: requesterId,
+        target_id: targetId,
         message: suggestion.reason,
         is_ai_suggested: true,
       });
 
       if (error) throw error;
 
+      const targetName = currentUser
+        ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2.name : suggestion.participant1.name)
+        : suggestion.participant2.name;
+
       toast({
-        title: "Meeting request created!",
-        description: `Sent to ${suggestion.participant1.name} and ${suggestion.participant2.name}`,
+        title: "Meeting request sent!",
+        description: `Sent to ${targetName}`,
       });
 
       const newSuggestions = suggestions.filter((s) => s !== suggestion);
@@ -329,9 +356,17 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
   const RoleIcon1 = (role: string) => ROLE_ICONS[role as keyof typeof ROLE_ICONS] || Code;
 
   const filteredSuggestions = suggestions.filter(s => {
-    if (!currentUser) return true;
-    const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
-    return !existingRequestIds.has(otherPersonId);
+    // Participant-only: must involve currentUser
+    if (currentUser && !isOrganizer) {
+      const involvesUser = s.participant1.id === currentUser.id || s.participant2.id === currentUser.id;
+      if (!involvesUser) return false;
+    }
+    // Exclude already-contacted
+    if (currentUser) {
+      const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+      return !existingRequestIds.has(otherPersonId);
+    }
+    return true;
   });
 
   return (
@@ -402,7 +437,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
         </p>
       </div>
 
-      {/* Suggestions - free-flowing list with DRAMATIC zig-zag indents */}
+      {/* Suggestions - left-aligned list */}
       {filteredSuggestions.length > 0 && (
         <div className="space-y-8">
           <div className="flex items-center gap-3 justify-center">
@@ -412,10 +447,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
             </h3>
           </div>
           
-          <div className="space-y-0 relative">
-            {/* Bold vertical timeline */}
-            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-charcoal/25 hidden md:block" />
-            
+          <div className="space-y-7">
             {filteredSuggestions.map((suggestion, index) => {
               const Icon1 = RoleIcon1(suggestion.participant1.role);
               const Icon2 = RoleIcon1(suggestion.participant2.role);
@@ -424,22 +456,10 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
               const otherPerson = currentUser 
                 ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
                 : null;
-              
-              // Dramatic zig-zag indent pattern
-              const indentPattern = [24, 100, 48, 80, 32, 96];
-              const indent = indentPattern[index % indentPattern.length];
 
               return (
-                <div 
-                  key={index} 
-                  className="py-8 border-b border-border/30 last:border-b-0 relative"
-                  style={{ paddingLeft: `${indent}px` }}
-                >
-                  {/* Timeline node */}
-                  <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[5px] w-[11px] h-[11px] rounded-full border-2 border-charcoal/30 bg-background" />
-                  
+                <div key={index} className="py-1">
                   {isYourMatch && otherPerson ? (
-                    // Personalized view
                     <div className="flex flex-col md:flex-row md:items-start gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
@@ -448,7 +468,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
                           <span className="font-serif text-lg font-medium text-foreground">
                             {otherPerson.name}
                           </span>
-                          <span className="text-xs font-medium text-success">
+                          <span className="text-xs font-medium text-primary">
                             {Math.round(suggestion.compatibility_score * 100)}% match
                           </span>
                         </div>
@@ -466,18 +486,11 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
                           )}
                         </div>
                         
-                        {otherPerson.bio && (
-                          <p className="text-sm text-muted-foreground font-serif italic mb-3">
-                            "{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"
-                          </p>
-                        )}
-                        
-                        <p className="text-sm text-muted-foreground">
-                          {suggestion.reason}
+                        <p className="text-sm text-muted-foreground font-serif italic">
+                          "{suggestion.reason}"
                         </p>
                       </div>
                       
-                      {/* Text link CTA */}
                       <button
                         onClick={() => createMeetingFromSuggestion(suggestion)}
                         className="text-link-cta group whitespace-nowrap"
@@ -487,7 +500,6 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
                       </button>
                     </div>
                   ) : (
-                    // Standard view
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -496,7 +508,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
                           <span className="text-muted-foreground">×</span>
                           <Icon2 className="w-4 h-4 text-primary" />
                           <span className="font-medium text-foreground">{suggestion.participant2.name}</span>
-                          <span className="text-xs font-medium text-success ml-2">
+                          <span className="text-xs font-medium text-primary ml-2">
                             {Math.round(suggestion.compatibility_score * 100)}%
                           </span>
                         </div>
@@ -524,18 +536,21 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       {/* No suggestions state */}
       {hasGenerated && filteredSuggestions.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">
-            {existingRequestIds.size > 0 
-              ? "You've already connected with all your matches! Find more below."
-              : "No matches found yet. Try generating again!"}
+          <SparkleIcon className="text-charcoal mx-auto mb-4" size={48} />
+          <p className="font-serif text-lg text-foreground mb-2">
+            You've reached out to everyone!
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            Check back if new participants join
           </p>
           <button
             onClick={generateMatches}
             disabled={isLoading}
-            className="text-sm text-primary hover:underline flex items-center gap-1 mx-auto"
+            className="text-link-cta group mx-auto"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Find More Matches
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
       )}
