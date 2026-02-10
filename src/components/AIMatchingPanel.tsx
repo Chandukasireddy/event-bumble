@@ -369,6 +369,24 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
     return true;
   });
 
+  // Deduplicate: keep only highest-scored match per other participant
+  const deduplicatedSuggestions = (() => {
+    if (!currentUser || isOrganizer) return filteredSuggestions;
+    const bestByOther = new Map<string, MatchSuggestion>();
+    for (const s of filteredSuggestions) {
+      const otherId = s.participant1.id === currentUser.id
+        ? s.participant2.id
+        : s.participant1.id;
+      const existing = bestByOther.get(otherId);
+      if (!existing || s.compatibility_score > existing.compatibility_score) {
+        bestByOther.set(otherId, s);
+      }
+    }
+    return Array.from(bestByOther.values()).sort(
+      (a, b) => b.compatibility_score - a.compatibility_score
+    );
+  })();
+
   return (
     <div className="space-y-12">
       {/* Personalized Greeting - minimal */}
@@ -438,9 +456,9 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       </div>
 
       {/* Suggestions - left-aligned list */}
-      {filteredSuggestions.length > 0 && (
+      {deduplicatedSuggestions.length > 0 && (
         <div className="space-y-8">
-          <div className="flex items-center gap-3 justify-center">
+          <div className="flex items-center gap-3 justify-start">
             <MediumSparkle className="text-primary" size={28} />
             <h3 className="font-serif text-xl font-medium text-foreground">
               {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
@@ -448,7 +466,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
           </div>
           
           <div className="space-y-7">
-            {filteredSuggestions.map((suggestion, index) => {
+            {deduplicatedSuggestions.map((suggestion, index) => {
               const Icon1 = RoleIcon1(suggestion.participant1.role);
               const Icon2 = RoleIcon1(suggestion.participant2.role);
               const isYourMatch = currentUser && 
@@ -456,6 +474,9 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
               const otherPerson = currentUser 
                 ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
                 : null;
+
+              // Safety net: never render third-party matches for participants
+              if (!isOrganizer && currentUser && !isYourMatch) return null;
 
               return (
                 <div key={index} className="py-1">
@@ -534,7 +555,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       )}
 
       {/* No suggestions state */}
-      {hasGenerated && filteredSuggestions.length === 0 && (
+      {hasGenerated && deduplicatedSuggestions.length === 0 && (
         <div className="text-center py-12">
           <SparkleIcon className="text-charcoal mx-auto mb-4" size={48} />
           <p className="font-serif text-lg text-foreground mb-2">
