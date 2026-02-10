@@ -131,8 +131,6 @@ export default function PublicRegister() {
   const [existingRegistrations, setExistingRegistrations] = useState<ExistingRegistration[]>([]);
   const [nameSuggestions, setNameSuggestions] = useState<ExistingRegistration[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
-  const [welcomeBackReg, setWelcomeBackReg] = useState<ExistingRegistration | null>(null);
   const [selectedExisting, setSelectedExisting] = useState<ExistingRegistration | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -218,6 +216,7 @@ export default function PublicRegister() {
     setWelcomeBackReg(reg);
     setShowWelcomeBack(true);
   };
+
   const setCustomResponse = (questionId: string, value: any) => {
     setCustomResponses((prev) => ({ ...prev, [questionId]: value }));
   };
@@ -521,227 +520,182 @@ export default function PublicRegister() {
               </p>
             </div>
 
-            {showWelcomeBack && welcomeBackReg ? (
-              <Card className="bg-card border-border">
-                <CardContent className="pt-6 text-center space-y-4">
-                  <p className="text-lg font-serif text-foreground">{welcomeBackReg.name}, welcome back!</p>
-                  <p className="text-sm text-muted-foreground">Would you like to skip straight to your dashboard?</p>
-                  <div className="flex flex-col gap-3 items-center pt-2">
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-primary hover:underline"
-                      onClick={() => {
-                        if (event) {
-                          localStorage.setItem(
-                            `meetspark_participant_${event.id}`,
-                            JSON.stringify({
-                              participantId: welcomeBackReg.id,
-                              name: welcomeBackReg.name,
-                              eventId: event.id,
-                            }),
-                          );
-                          localStorage.setItem(
-                            `currentUser_${event.id}`,
-                            JSON.stringify({
-                              id: welcomeBackReg.id,
-                              name: welcomeBackReg.name,
-                              isOrganizer: false,
-                            }),
-                          );
-                          navigate(`/event/${event.id}`);
-                        }
-                      }}
-                    >
-                      Go to Dashboard →
-                    </button>
-                    <button
-                      type="button"
-                      className="text-sm text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowWelcomeBack(false)}
-                    >
-                      Re-take survey
-                    </button>
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Name with Autocomplete */}
+                  <div className="space-y-2 relative" ref={suggestionsRef}>
+                    <Label htmlFor="name" className="text-foreground/80">
+                      Name *
+                    </Label>
+                    <Input
+                      id="name"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      onFocus={() => name.length >= 3 && nameSuggestions.length > 0 && setShowSuggestions(true)}
+                      className="bg-input border-border focus:border-primary"
+                      autoComplete="off"
+                    />
+                    {selectedExisting && (
+                      <p className="text-xs text-success flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Found your registration! Update your details below.
+                      </p>
+                    )}
+                    {showSuggestions && nameSuggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {nameSuggestions.map((reg) => (
+                          <button
+                            key={reg.id}
+                            type="button"
+                            className="w-full px-4 py-3 text-left hover:bg-secondary/50 flex items-center gap-3 transition-colors"
+                            onClick={() => selectExistingRegistration(reg)}
+                          >
+                            <User className="w-4 h-4 text-primary flex-shrink-0" />
+                            <div>
+                              <p className="font-medium text-foreground">{reg.name}</p>
+                              <p className="text-xs text-muted-foreground">Click to update your registration</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-card border-border">
-                <CardContent className="pt-6">
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Name with Autocomplete */}
-                    <div className="space-y-2 relative" ref={suggestionsRef}>
-                      <Label htmlFor="name" className="text-foreground/80">
-                        Name *
-                      </Label>
-                      <Input
-                        id="name"
-                        placeholder="Your name"
-                        value={name}
-                        onChange={(e) => handleNameChange(e.target.value)}
-                        onFocus={() => name.length >= 3 && nameSuggestions.length > 0 && setShowSuggestions(true)}
-                        className="bg-input border-border focus:border-primary"
-                        autoComplete="off"
-                      />
-                      {selectedExisting && (
-                        <p className="text-xs text-success flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Found your registration! Update your details below.
-                        </p>
-                      )}
-                      {showSuggestions && nameSuggestions.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {nameSuggestions.map((reg) => (
-                            <button
-                              key={reg.id}
-                              type="button"
-                              className="w-full px-4 py-3 text-left hover:bg-secondary/50 flex items-center gap-3 transition-colors"
-                              onClick={() => selectExistingRegistration(reg)}
-                            >
-                              <User className="w-4 h-4 text-primary flex-shrink-0" />
-                              <div>
-                                <p className="font-medium text-foreground">{reg.name}</p>
-                                <p className="text-xs text-muted-foreground">Click to update your registration</p>
-                              </div>
-                            </button>
+
+                  {/* Custom questions OR default questions */}
+                  {hasCustomQuestions ? (
+                    <>
+                      {customQuestions.map((question) => (
+                        <div key={question.id} className="space-y-3">
+                          <Label className="text-foreground/80">
+                            {question.question_text}
+                            {question.is_required && " *"}
+                          </Label>
+                          {renderCustomQuestion(question)}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      {/* Default: My Vibe */}
+                      <div className="space-y-3">
+                        <Label className="text-foreground/80">My Vibe - Which area excites you most? *</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {VIBE_OPTIONS.map((option) => (
+                            <SelectButton
+                              key={option.value}
+                              selected={vibe === option.value}
+                              onClick={() => setVibe(option.value)}
+                              label={option.label}
+                            />
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Custom questions OR default questions */}
-                    {hasCustomQuestions ? (
-                      <>
-                        {customQuestions.map((question) => (
-                          <div key={question.id} className="space-y-3">
-                            <Label className="text-foreground/80">
-                              {question.question_text}
-                              {question.is_required && " *"}
-                            </Label>
-                            {renderCustomQuestion(question)}
-                          </div>
-                        ))}
-                      </>
+                      {/* Default: My Superpower */}
+                      <div className="space-y-3">
+                        <Label className="text-foreground/80">My Superpower (The "Give") *</Label>
+                        <p className="text-xs text-muted-foreground -mt-1">I'm the one who...</p>
+                        <div className="grid gap-2">
+                          {SUPERPOWER_OPTIONS.map((option) => (
+                            <SelectButton
+                              key={option.value}
+                              selected={superpower === option.value}
+                              onClick={() => setSuperpower(option.value)}
+                              label={option.label}
+                              desc={option.desc}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Default: My Ideal Co-Pilot */}
+                      <div className="space-y-3">
+                        <Label className="text-foreground/80">My Ideal Co-Pilot (The "Get") *</Label>
+                        <p className="text-xs text-muted-foreground -mt-1">I'm looking for a...</p>
+                        <div className="grid gap-2">
+                          {COPILOT_OPTIONS.map((option) => (
+                            <SelectButton
+                              key={option.value}
+                              selected={idealCopilot === option.value}
+                              onClick={() => setIdealCopilot(option.value)}
+                              label={option.label}
+                              desc={option.desc}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Default: My Off-Screen Life */}
+                      <div className="space-y-3">
+                        <Label className="text-foreground/80">My Off-Screen Life</Label>
+                        <p className="text-xs text-muted-foreground -mt-1">Find me...</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {OFFSCREEN_OPTIONS.map((option) => (
+                            <SelectButton
+                              key={option.value}
+                              selected={offscreenLife === option.value}
+                              onClick={() => setOffscreenLife(option.value)}
+                              label={option.label}
+                              desc={option.desc}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Default: Bio */}
+                      <div className="space-y-2">
+                        <Label htmlFor="bio" className="text-foreground/80">
+                          About You
+                        </Label>
+                        <p className="text-xs text-muted-foreground -mt-1">Short intro to find your match</p>
+                        <Textarea
+                          id="bio"
+                          placeholder="Tell us a bit about yourself..."
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          className="bg-input border-border focus:border-primary min-h-[80px]"
+                          maxLength={300}
+                        />
+                        <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
+                      </div>
+
+                      {/* Default: LinkedIn */}
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedin" className="text-foreground/80">
+                          LinkedIn Profile URL (Optional)
+                        </Label>
+                        <Input
+                          id="linkedin"
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          value={linkedinUrl}
+                          onChange={(e) => setLinkedinUrl(e.target.value)}
+                          className="bg-input border-border focus:border-primary"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full text-link-cta justify-center py-4 border-t border-border/50 mt-6 disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      "Finding your match..."
                     ) : (
                       <>
-                        {/* Default: My Vibe */}
-                        <div className="space-y-3">
-                          <Label className="text-foreground/80">My Vibe - Which area excites you most? *</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {VIBE_OPTIONS.map((option) => (
-                              <SelectButton
-                                key={option.value}
-                                selected={vibe === option.value}
-                                onClick={() => setVibe(option.value)}
-                                label={option.label}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Default: My Superpower */}
-                        <div className="space-y-3">
-                          <Label className="text-foreground/80">My Superpower (The "Give") *</Label>
-                          <p className="text-xs text-muted-foreground -mt-1">I'm the one who...</p>
-                          <div className="grid gap-2">
-                            {SUPERPOWER_OPTIONS.map((option) => (
-                              <SelectButton
-                                key={option.value}
-                                selected={superpower === option.value}
-                                onClick={() => setSuperpower(option.value)}
-                                label={option.label}
-                                desc={option.desc}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Default: My Ideal Co-Pilot */}
-                        <div className="space-y-3">
-                          <Label className="text-foreground/80">My Ideal Co-Pilot (The "Get") *</Label>
-                          <p className="text-xs text-muted-foreground -mt-1">I'm looking for a...</p>
-                          <div className="grid gap-2">
-                            {COPILOT_OPTIONS.map((option) => (
-                              <SelectButton
-                                key={option.value}
-                                selected={idealCopilot === option.value}
-                                onClick={() => setIdealCopilot(option.value)}
-                                label={option.label}
-                                desc={option.desc}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Default: My Off-Screen Life */}
-                        <div className="space-y-3">
-                          <Label className="text-foreground/80">My Off-Screen Life</Label>
-                          <p className="text-xs text-muted-foreground -mt-1">Find me...</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {OFFSCREEN_OPTIONS.map((option) => (
-                              <SelectButton
-                                key={option.value}
-                                selected={offscreenLife === option.value}
-                                onClick={() => setOffscreenLife(option.value)}
-                                label={option.label}
-                                desc={option.desc}
-                              />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Default: Bio */}
-                        <div className="space-y-2">
-                          <Label htmlFor="bio" className="text-foreground/80">
-                            About You
-                          </Label>
-                          <p className="text-xs text-muted-foreground -mt-1">Short intro to find your match</p>
-                          <Textarea
-                            id="bio"
-                            placeholder="Tell us a bit about yourself..."
-                            value={bio}
-                            onChange={(e) => setBio(e.target.value)}
-                            className="bg-input border-border focus:border-primary min-h-[80px]"
-                            maxLength={300}
-                          />
-                          <p className="text-xs text-muted-foreground text-right">{bio.length}/300</p>
-                        </div>
-
-                        {/* Default: LinkedIn */}
-                        <div className="space-y-2">
-                          <Label htmlFor="linkedin" className="text-foreground/80">
-                            LinkedIn Profile URL (Optional)
-                          </Label>
-                          <Input
-                            id="linkedin"
-                            placeholder="https://linkedin.com/in/yourprofile"
-                            value={linkedinUrl}
-                            onChange={(e) => setLinkedinUrl(e.target.value)}
-                            className="bg-input border-border focus:border-primary"
-                          />
-                        </div>
+                        <SparkleIcon className="text-primary" size={20} />
+                        Find My Match
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
-
-                    {/* Submit */}
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full text-link-cta justify-center py-4 border-t border-border/50 mt-6 disabled:opacity-50"
-                    >
-                      {isSubmitting ? (
-                        "Finding your match..."
-                      ) : (
-                        <>
-                          <SparkleIcon className="text-primary" size={20} />
-                          Find My Match
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+                  </button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
