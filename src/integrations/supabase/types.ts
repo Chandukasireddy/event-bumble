@@ -63,6 +63,7 @@ export type Database = {
           created_at: string
           creator_name: string | null
           description: string | null
+          end_datetime: string | null
           event_date: string | null
           id: string
           location: string | null
@@ -70,12 +71,14 @@ export type Database = {
           networking_duration: number | null
           organizer_code: string
           share_code: string
+          start_datetime: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           creator_name?: string | null
           description?: string | null
+          end_datetime?: string | null
           event_date?: string | null
           id?: string
           location?: string | null
@@ -83,12 +86,14 @@ export type Database = {
           networking_duration?: number | null
           organizer_code?: string
           share_code?: string
+          start_datetime?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           creator_name?: string | null
           description?: string | null
+          end_datetime?: string | null
           event_date?: string | null
           id?: string
           location?: string | null
@@ -96,6 +101,7 @@ export type Database = {
           networking_duration?: number | null
           organizer_code?: string
           share_code?: string
+          start_datetime?: string | null
           updated_at?: string
         }
         Relationships: []
