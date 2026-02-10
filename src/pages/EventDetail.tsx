@@ -22,6 +22,7 @@ import { ParticipantCard } from "@/components/ParticipantCard";
 import { MeetingRequestsList } from "@/components/MeetingRequestsList";
 import { AIMatchingPanel } from "@/components/AIMatchingPanel";
 import { FormBuilder } from "@/components/FormBuilder";
+import { ParticipantSurveyView } from "@/components/ParticipantSurveyView";
 import { SparkleIcon, OverlappingCirclesIcon } from "@/components/icons/GeometricIcons";
 import { NetworkBackground } from "@/components/NetworkBackground";
 import { CornerBracketFlipped, MediumSparkle } from "@/components/icons/DecorativeLines";
@@ -309,6 +310,15 @@ export default function EventDetail() {
                 <Users className="w-4 h-4 mr-2" />
                 Participants ({participants.length})
               </TabsTrigger>
+              {!isOrganizer && currentUser && (
+                <TabsTrigger
+                  value="my-survey"
+                  className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-0 pb-3 text-muted-foreground data-[state=active]:text-foreground"
+                >
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Survey
+                </TabsTrigger>
+              )}
               {isOrganizer && (
                 <TabsTrigger
                   value="survey"
@@ -397,6 +407,12 @@ export default function EventDetail() {
                 </div>
               )}
             </TabsContent>
+
+            {!isOrganizer && currentUser && (
+              <TabsContent value="my-survey" className="mt-8">
+                <ParticipantSurveyView eventId={event.id} participantId={currentUser.id} />
+              </TabsContent>
+            )}
 
             {isOrganizer && (
               <TabsContent value="survey" className="mt-8">
