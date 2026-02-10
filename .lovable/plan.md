@@ -1,95 +1,105 @@
 
 
-## Bug Fix: AI Matching Tab — Filtering, Deduplication, and Alignment
+## Returning Participant Auto-Skip + Survey Tab
 
 ### Summary
-Three targeted fixes to `src/components/AIMatchingPanel.tsx`. No refactoring, no new UI elements, no changes to other tabs or organizer view.
+Three changes: (A) Auto-detect returning participants via localStorage and skip survey, (B) Show welcome-back confirmation when an existing name is selected from dropdown, (C) Add a read-only "Survey" tab to the participant dashboard.
 
 ---
 
-### Bug Fix 1 — Remove third-party matches
+### Part A -- localStorage Auto-Skip (PublicRegister.tsx)
 
-**Root cause:** The `filteredSuggestions` filter at line 358 correctly checks `involvesUser`, but matches restored from localStorage may bypass the generation-time filter. Additionally, the render path at line 502-528 still shows an "organizer-style" card (`Name1 x Name2`) for any match that slips through where `isYourMatch` is false.
+**After the event is fetched** (inside `fetchEvent`, after line 216), check for a localStorage key `meetspark_participant_${event.id}`. If found, parse the JSON, verify the `participantId` exists in the database for this event, and if valid, set `currentUser_${eventId}` in localStorage (for EventDetail compatibility) and `navigate(/event/${eventId})` immediately.
 
-**Fix:**
-- Strengthen the `filteredSuggestions` filter to always exclude non-currentUser matches for participants (this already exists but we ensure it runs on cached data too).
-- In the render loop, for non-organizer participants, skip rendering entirely if `isYourMatch` is false (never show the `Participant1 x Participant2` card layout for participants). This acts as a safety net.
-
----
-
-### Bug Fix 2 — Deduplicate matches by other participant
-
-**Root cause:** The AI matching engine returns multiple scored suggestions for the same pair. No deduplication exists.
-
-**Fix:**
-Add deduplication logic after `filteredSuggestions` is computed. Group by the OTHER participant's ID, keep only the highest-scored entry per person, then sort descending by score.
-
-```text
-Location: After line 370 (filteredSuggestions computation)
-
-Logic:
-1. For each suggestion, determine otherId (the non-currentUser participant)
-2. Use a Map<otherId, MatchSuggestion> keeping only highest score
-3. Convert back to array, sort by score descending
+**After successful survey submission** (line 341-349, after setting `currentUser_${event.id}`), also set the new localStorage key:
+```
+localStorage.setItem(`meetspark_participant_${event.id}`, JSON.stringify({
+  participantId: resultId,
+  name,
+  eventId: event.id,
+}));
 ```
 
+This means returning participants who visit `/register/${shareCode}` will never see the survey -- they go straight to their dashboard.
+
 ---
 
-### Bug Fix 3 — Left-align all match cards
+### Part B -- Welcome-Back Confirmation (PublicRegister.tsx)
 
-**Fix in AIMatchingPanel.tsx:**
-- Ensure match card containers use `items-start` and `justify-start` (not center)
-- The "Request to Meet" CTA stays right-aligned on desktop (via `md:flex-row` with the button on the right side) — this is already correct
-- Verify no stray center-alignment classes on name rows, badge rows, or description text
+Add a new state: `showWelcomeBack` (boolean, default false).
 
-**ParticipantCard.tsx:** Already left-aligned — no changes needed. The card uses `items-start` and `justify-between` which is correct per the spec.
+When `selectExistingRegistration` is called (line 234-239), instead of just showing a toast, set `showWelcomeBack = true` and store the selected registration.
+
+In the form JSX (around line 546), when `showWelcomeBack && selectedExisting` is true, render a welcome-back card **replacing the form** (not alongside it):
+
+- "[Name], welcome back!" -- 18px serif, color charcoal
+- "Would you like to skip straight to your dashboard?" -- 14px sans, color #6B6B6B
+- Two CTAs:
+  - "Go to Dashboard" -- gold text link, sets localStorage entries and navigates to `/event/${event.id}`
+  - "Re-take survey" -- gray text link, sets `showWelcomeBack = false` to reveal the form again
+
+This appears inside the same Card container as the survey form.
+
+---
+
+### Part C -- Participant Survey Tab (EventDetail.tsx)
+
+**Tab bar** (lines 305-320): After the Participants tab and before the organizer-only Survey tab, add a participant-only Survey tab:
+
+```
+{!isOrganizer && currentUser && (
+  <TabsTrigger value="my-survey" ...>
+    <ClipboardList className="w-4 h-4 mr-2" />
+    Survey
+  </TabsTrigger>
+)}
+```
+
+**Tab content**: Create a new component `ParticipantSurveyView` (inline or separate file) that:
+
+1. Fetches the participant's registration data and custom question responses from the database
+2. Renders each question with the saved answer in read-only (disabled) mode
+3. Shows an "Edit Answers" gold text CTA at the bottom
+4. When clicked, enables all inputs for editing
+5. On re-submit, updates the database and shows "Answers updated" success state, then returns to read-only
+
+For events with default questions (no custom questions), show the default fields (Vibe, Superpower, Co-Pilot, Off-Screen Life, Bio) in read-only mode with the same edit capability.
 
 ---
 
 ### Technical Details
 
-**File: `src/components/AIMatchingPanel.tsx`**
+```text
+File: src/pages/PublicRegister.tsx
 
-**Change 1 — Deduplication after filteredSuggestions (after line 370):**
-```typescript
-// Deduplicate: keep only highest-scored match per other participant
-const deduplicatedSuggestions = (() => {
-  if (!currentUser || isOrganizer) return filteredSuggestions;
-  const bestByOther = new Map<string, MatchSuggestion>();
-  for (const s of filteredSuggestions) {
-    const otherId = s.participant1.id === currentUser.id 
-      ? s.participant2.id 
-      : s.participant1.id;
-    const existing = bestByOther.get(otherId);
-    if (!existing || s.compatibility_score > existing.compatibility_score) {
-      bestByOther.set(otherId, s);
-    }
-  }
-  return Array.from(bestByOther.values()).sort(
-    (a, b) => b.compatibility_score - a.compatibility_score
-  );
-})();
+1. New state: showWelcomeBack (boolean)
+2. In fetchEvent (after line 216): check localStorage for 
+   meetspark_participant_${eventId}, verify in DB, redirect if valid
+3. In selectExistingRegistration (line 234): set showWelcomeBack = true
+4. After handleSubmit success (line 341): also set meetspark_participant_ key
+5. In JSX (line 546): conditional render -- if showWelcomeBack, show 
+   welcome-back card instead of form
+
+File: src/pages/EventDetail.tsx
+
+1. Add participant-only "Survey" TabsTrigger (value="my-survey") 
+   after Participants tab (line 311)
+2. Add TabsContent for "my-survey" with ParticipantSurveyView component
+
+File: src/components/ParticipantSurveyView.tsx (new file)
+
+Props: eventId, participantId
+- Fetches registration + custom questions + responses on mount
+- Renders questions read-only by default
+- "Edit Answers" toggles editable mode
+- Re-submit updates DB, shows success, returns to read-only
+- Reuses renderCustomQuestion patterns from PublicRegister
 ```
 
-**Change 2 — Replace all `filteredSuggestions` references in JSX with `deduplicatedSuggestions`:**
-- Line 441: `deduplicatedSuggestions.length > 0`
-- Line 451: `deduplicatedSuggestions.map(...)`
-- Line 537: `deduplicatedSuggestions.length === 0`
-
-**Change 3 — Safety guard in render loop (line 460-529):**
-For non-organizer participants, if `!isYourMatch`, skip rendering entirely (return null) instead of showing the two-person organizer card. This prevents any leaked third-party match from ever displaying.
-
-**Change 4 — Left-alignment classes:**
-- Match card outer div (line 463): ensure `items-start` not `items-center`
-- Name/score row (line 465): `justify-start` (already has `flex items-center`)
-- Badge row (line 476): already `flex flex-wrap` — correct
-- Description (line 489): already left-aligned — correct
-
 ### What stays unchanged
-- Organizer view (no filtering, no deduplication, sees all matches)
-- Requests tab, Participants tab, Survey tab
-- Navigation, header, tab switching
-- The AI matching algorithm/edge function
-- Welcome greeting and "Find More Matches" button
-- ParticipantCard component (already correctly aligned)
+- Organizer flow and organizer Survey tab (FormBuilder)
+- First-time participant survey flow (identical behavior)
+- AI Matching, Requests, Participants tabs
+- Navigation, header, routing for organizers
+- Matching algorithm
 
