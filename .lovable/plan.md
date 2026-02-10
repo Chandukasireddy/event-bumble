@@ -1,200 +1,78 @@
 
 
-# Name-Based Role Logic: Organizer vs. Participant
+## AI Matching Tab: Participant-Only Filtering
 
-## Overview
-
-This plan implements a name-based identity system where Organizers and Participants get different views and permissions -- without formal authentication. Identity is determined by matching a locally-stored name against database records.
-
-## Current State
-
-- No authentication or identity system exists
-- Dashboard shows ALL events (no filtering by creator)
-- Events table has no `creator_name` field
-- Participants register via `/register/:shareCode` and are stored in localStorage per event
-- No permission checks on organizer-only actions (edit, manage, settings)
-
-## Data Structure Changes
-
-### Database Migration: Add `creator_name` to events table
-
-```sql
-ALTER TABLE public.events ADD COLUMN creator_name text;
-```
-
-This column stores the name of the organizer who created the event. Existing events will have `NULL` for this field (they'll be visible to all organizers until updated).
+### Summary
+Update the `AIMatchingPanel` component so participants only see matches involving themselves, exclude already-contacted people, and see a proper empty state. Organizer view remains unchanged. Remove the zig-zag indentation pattern so all matches are left-aligned.
 
 ---
 
-## Implementation Plan
+### Changes (single file: `src/components/AIMatchingPanel.tsx`)
 
-### 1. Organizer Identity Entry (Landing Page Update)
+**1. Filter matches after generation (participant view only)**
 
-**File: `src/pages/Index.tsx`**
+After AI results are mapped in `generateMatches()`, if `currentUser` exists and `isOrganizer` is false, filter to keep only suggestions where `participant1.id === currentUser.id` or `participant2.id === currentUser.id`. This replaces the current sort-only logic at lines 226-234.
 
-- Update the "Create Your Event" CTA to link to `/dashboard` (already does this)
-- No separate organizer form needed on landing -- the identity prompt happens on the Dashboard
+**2. Filter matches on render (`filteredSuggestions`)**
 
-### 2. Dashboard: Organizer Name Prompt + Filtered View
+The existing `filteredSuggestions` computation (around line 330) already excludes people with existing requests. Add an additional filter: if `currentUser` exists and not organizer, only show matches involving the current user.
 
-**File: `src/pages/Dashboard.tsx`**
+**3. Remove zig-zag indentation**
 
-**On first visit:**
-- Check `localStorage.getItem('organizerName')`
-- If not set, show a name entry form: "Enter your name to manage events"
-- Store the entered name in `localStorage` as `organizerName`
-- Show a "Change Identity" text link in the header to switch names
+Remove the `indentPattern` array and the dynamic `paddingLeft` style (around lines 365-370). All match items will be left-aligned with consistent padding.
 
-**Event Creation:**
-- When creating an event, include `creator_name` from `localStorage.getItem('organizerName')` in the insert
+**4. Fresh participant fetch on "Find More Matches"**
 
-**Event Filtering:**
-- Fetch only events where `creator_name` matches the stored organizer name
-- Query: `.eq('creator_name', organizerName)`
-- Fallback: Also show events with `creator_name = null` (legacy events)
+In `generateMatches()`, before calling the AI edge function, re-fetch participants from Supabase instead of using the stale `participants` prop. This ensures newly registered participants are included.
 
-**Header Update:**
-- Show "Logged in as: [Name]" with a small "Change" link
-- "Change" clears `organizerName` from localStorage and re-prompts
+**5. Update available count**
 
-### 3. Participant Flow (Already Mostly Working)
+The "X people available" text already filters by `existingRequestIds`. No change needed -- it correctly reflects eligible participants.
 
-**File: `src/pages/PublicRegister.tsx`** -- Minimal changes needed
+**6. Empty state when all matched**
 
-- Already collects participant name and stores in `localStorage` as `currentUser_{eventId}`
-- After registration, redirects to `/event/{eventId}` where participant sees the event detail
+Replace the current empty state (lines ~340-355) with the specified design:
+- Large sparkle icon (charcoal, 48px)
+- "You've reached out to everyone!"
+- "Check back if new participants join"
+- Keep the "Find More Matches" refresh button
 
-**File: `src/pages/EventDetail.tsx`** -- Add permission checks
+**7. Fix `createMeetingFromSuggestion` requester**
 
-- Determine user role by checking:
-  1. Is `localStorage.getItem('organizerName')` set AND does it match `event.creator_name`? --> Organizer view
-  2. Is `localStorage.getItem('currentUser_{eventId}')` set? --> Participant view
-  3. Neither? --> Read-only / prompt to register
-
-### 4. Permission-Based UI in EventDetail
-
-**File: `src/pages/EventDetail.tsx`**
-
-**Organizer View (full access):**
-- Show all tabs (AI Matching, Requests, Participants)
-- Show "Copy Link" button
-- Show event management actions
-- Can trigger AI matching for all participants
-
-**Participant View (limited):**
-- Show AI Matching tab (personal matches only -- already works this way)
-- Show Requests tab (their own requests)
-- Show Participants tab (read-only list)
-- Hide "Copy Link" and management actions
-- Event details shown as read-only text
-
-**Implementation approach:**
-```tsx
-const isOrganizer = (() => {
-  const orgName = localStorage.getItem('organizerName');
-  return orgName && event?.creator_name && 
-    orgName.toLowerCase() === event.creator_name.toLowerCase();
-})();
-```
-
-### 5. Participant Dashboard View
-
-**New consideration:** Currently participants go directly to `/event/{eventId}`. For a participant to see "all their events," we need a way to look up events by participant name.
-
-**Approach:** Add a "My Events" section to the Dashboard when an organizer name is NOT set but participant registrations exist:
-
-- Scan localStorage for all `currentUser_*` keys
-- Extract event IDs from those keys
-- Fetch those events from the database
-- Display as a simpler read-only list (no "Create Event" or management actions)
-
-**OR simpler approach:** Add a participant entry point on the Dashboard:
-- If no `organizerName` is set, show two options:
-  - "I'm an Organizer" --> Name entry form, then organizer dashboard
-  - "I'm a Participant" --> Name entry, then show events where their name exists in registrations
+Currently it always uses `participant1.id` as requester. When `currentUser` exists, ensure `requester_id` is always `currentUser.id` and `target_id` is the other person.
 
 ---
 
-## Detailed File Changes
-
-| File | Changes |
-|------|---------|
-| **Database** | Add `creator_name` text column to `events` table |
-| `src/pages/Dashboard.tsx` | Add organizer name prompt, filter events by creator_name, save creator_name on event creation, add role selection (organizer vs participant), participant event list |
-| `src/pages/EventDetail.tsx` | Add `isOrganizer` check, conditionally show/hide management UI, make participant view read-only |
-| `src/pages/Index.tsx` | Minor: Update CTA links if needed for role split |
-| `src/components/AIMatchingPanel.tsx` | Pass `isOrganizer` prop to control "generate matches for all" vs "find my matches" |
-| `src/components/ParticipantCard.tsx` | Hide "Meet" action for organizers (they're not participants) |
-
----
-
-## User Flow Summary
+### Technical Details
 
 ```text
-Landing Page (/)
-    |
-    v
-Dashboard (/dashboard)
-    |
-    +-- No identity stored?
-    |       |
-    |       v
-    |   "Who are you?" prompt
-    |       |
-    |       +-- "I'm an Organizer" --> Enter name --> See YOUR events
-    |       |
-    |       +-- "I'm a Participant" --> Enter name --> See events you're registered for
-    |
-    +-- Organizer identity stored?
-    |       |
-    |       v
-    |   Filtered event list (creator_name matches)
-    |   Can create events, manage, copy links
-    |
-    +-- Participant identity stored?
-            |
-            v
-        Read-only event list (events where name is in registrations)
-        Click event --> EventDetail (participant view)
+File: src/components/AIMatchingPanel.tsx
+
+Location: generateMatches() ~line 216-234
+Change: After mapping suggestions, if currentUser && !isOrganizer, 
+        filter to only matches involving currentUser.id
+
+Location: generateMatches() ~line 185-195  
+Change: Re-fetch registrations from Supabase for fresh participant list
+        before calling the edge function
+
+Location: filteredSuggestions ~line 330
+Change: Add currentUser + !isOrganizer filter
+
+Location: ~line 365-370
+Change: Remove indentPattern array and dynamic paddingLeft style
+
+Location: createMeetingFromSuggestion ~line 299-307
+Change: Set requester_id = currentUser.id, target_id = otherPerson.id
+
+Location: empty state ~line 340-355
+Change: Updated copy and sparkle icon per spec
 ```
 
----
-
-## Permission Matrix
-
-| Action | Organizer | Participant |
-|--------|-----------|-------------|
-| Create Event | Yes | No |
-| Edit Event Details | Yes | No |
-| Copy Share Link | Yes | No |
-| View Participants List | Yes | Yes (read-only) |
-| Trigger AI Matching (all) | Yes | No |
-| Find My Matches | No (not a participant) | Yes |
-| Send Meeting Requests | No | Yes |
-| Accept/Decline Requests | No | Yes |
-| View Event Info | Yes (full) | Yes (read-only) |
-| Switch Role | Yes (via "Change" link) | Yes (via "Change" link) |
-
----
-
-## Edge Cases Handled
-
-- **Same name, different people:** This is a known limitation of name-based matching. Names are compared case-insensitively. Users are informed this is not secure authentication.
-- **Organizer who is also a participant:** They can switch roles via the dashboard. When viewing as organizer, they see management. When registered as participant, they see matches.
-- **Legacy events (no creator_name):** Shown to all organizers with a note "unclaimed event."
-- **Name changes:** If an organizer changes their stored name, they lose access to previously created events. A warning is shown before changing.
-
----
-
-## Testing Checklist
-
-- [ ] Dashboard shows role selection prompt on first visit
-- [ ] Organizer can enter name and see only their events
-- [ ] Creating an event saves `creator_name` correctly
-- [ ] Participant can enter name and see their registered events
-- [ ] EventDetail hides management UI for participants
-- [ ] EventDetail shows full controls for organizers
-- [ ] "Change Identity" works and re-prompts
-- [ ] Existing events (without creator_name) are handled gracefully
-- [ ] Mobile responsive for the role selection prompt
+### What stays unchanged
+- Organizer view (sees all matches, all participants)
+- Requests tab, Participants tab, Survey tab
+- Navigation, header, tab switching
+- The AI matching algorithm itself
+- Welcome greeting section
 
