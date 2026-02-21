@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Code, Palette, Briefcase, ArrowRight, RefreshCw, User } from "lucide-react";
+import { Sparkles, Zap, Code, Palette, Briefcase, ArrowRight, RefreshCw, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { OverlappingCirclesIcon, SparkleIcon } from "@/components/icons/GeometricIcons";
-import { MediumSparkle } from "@/components/icons/DecorativeLines";
-import { TitleSparkle } from "@/components/BoldDecorations";
 
 const ROLE_ICONS = {
   Dev: Code,
@@ -67,10 +66,9 @@ interface AIMatchingPanelProps {
   eventId: string;
   participants: Participant[];
   currentUser: CurrentUser | null;
-  isOrganizer?: boolean;
 }
 
-export function AIMatchingPanel({ eventId, participants, currentUser, isOrganizer = false }: AIMatchingPanelProps) {
+export function AIMatchingPanel({ eventId, participants, currentUser }: AIMatchingPanelProps) {
   const storageKey = `ai-matches-${eventId}-${currentUser?.id || 'anon'}`;
   
   // Track participants we already have requests with
@@ -119,11 +117,13 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
   }, [eventId, currentUser?.id]);
   
   // Initialize state from localStorage
+  // Initialize state from localStorage
   const [suggestions, setSuggestions] = useState<MatchSuggestion[]>(() => {
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
+        // Re-hydrate participant references
         return parsed.map((s: any) => ({
           ...s,
           participant1: participants.find(p => p.id === s.participant1Id) || s.participant1,
@@ -158,58 +158,44 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
     }
   }, [suggestions, storageKey]);
 
+  // Removed auto-generate - only generate on user click
+
   const generateMatches = async () => {
+    // Filter out participants we already have requests with
+    const availableParticipants = participants.filter(
+      p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)
+    );
+    
+    if (availableParticipants.length < 1) {
+      toast({
+        title: "No new matches available",
+        description: "You already have requests with all participants",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (participants.length < 2) {
+      toast({
+        title: "Not enough participants",
+        description: "You need at least 2 participants to generate matches",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Re-fetch fresh participants from database
-      const { data: freshRegistrations, error: fetchError } = await supabase
-        .from("registrations")
-        .select("id, name, role, interests, telegram_handle, vibe, superpower, ideal_copilot, offscreen_life, bio")
-        .eq("event_id", eventId);
+      // If we have a current user, generate matches specifically for them
+      const targetUser = currentUser 
+        ? participants.find(p => p.id === currentUser.id) || { ...currentUser, telegram_handle: "" }
+        : null;
 
-      if (fetchError) throw fetchError;
-
-      const freshParticipants: Participant[] = (freshRegistrations || []).map(r => ({
-        id: r.id,
-        name: r.name,
-        role: r.role,
-        interests: r.interests || [],
-        telegram_handle: r.telegram_handle || "",
-        vibe: r.vibe || undefined,
-        superpower: r.superpower || undefined,
-        ideal_copilot: r.ideal_copilot || undefined,
-        offscreen_life: r.offscreen_life || undefined,
-        bio: r.bio || undefined,
-      }));
-
-      const availableParticipants = freshParticipants.filter(
-        p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)
-      );
-
-      if (availableParticipants.length < 1) {
-        toast({
-          title: "No new matches available",
-          description: "You already have requests with all participants",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (freshParticipants.length < 2) {
-        toast({
-          title: "Not enough participants",
-          description: "You need at least 2 participants to generate matches",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
+      // Only send available participants to AI (exclude already requested)
       const participantsForAI = currentUser 
-        ? [freshParticipants.find(p => p.id === currentUser.id), ...availableParticipants].filter(Boolean)
-        : freshParticipants;
+        ? [participants.find(p => p.id === currentUser.id), ...availableParticipants].filter(Boolean)
+        : participants;
 
       const { data, error } = await supabase.functions.invoke("ai-matching", {
         body: {
@@ -234,22 +220,23 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       if (data?.suggestions) {
         let mappedSuggestions: MatchSuggestion[] = data.suggestions.map(
           (s: { participant1_id: string; participant2_id: string; reason: string; compatibility_score: number }) => ({
-            participant1: freshParticipants.find((p) => p.id === s.participant1_id)!,
-            participant2: freshParticipants.find((p) => p.id === s.participant2_id)!,
+            participant1: participants.find((p) => p.id === s.participant1_id)!,
+            participant2: participants.find((p) => p.id === s.participant2_id)!,
             reason: s.reason,
             compatibility_score: s.compatibility_score,
           })
         ).filter((s: MatchSuggestion) => s.participant1 && s.participant2);
 
-        // Participant-only filtering: keep only matches involving currentUser
-        if (currentUser && !isOrganizer) {
-          mappedSuggestions = mappedSuggestions.filter(s =>
-            s.participant1.id === currentUser.id || s.participant2.id === currentUser.id
-          );
+        // If current user exists, prioritize their matches
+        if (currentUser) {
+          mappedSuggestions = mappedSuggestions.sort((a, b) => {
+            const aHasUser = a.participant1.id === currentUser.id || a.participant2.id === currentUser.id;
+            const bHasUser = b.participant1.id === currentUser.id || b.participant2.id === currentUser.id;
+            if (aHasUser && !bHasUser) return -1;
+            if (!aHasUser && bHasUser) return 1;
+            return b.compatibility_score - a.compatibility_score;
+          });
         }
-
-        // Sort by score
-        mappedSuggestions.sort((a, b) => b.compatibility_score - a.compatibility_score);
 
         setSuggestions(mappedSuggestions);
         setHasGenerated(true);
@@ -260,6 +247,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       }
     } catch (error) {
       console.error("Error generating matches:", error);
+      // Fallback to fun random matches if AI fails
       if (currentUser && participants.length >= 2) {
         const fallbackMatches = generateFallbackMatches();
         if (fallbackMatches.length > 0) {
@@ -282,9 +270,11 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
     }
   };
 
+  // Generate fun fallback matches when AI is unavailable
   const generateFallbackMatches = (): MatchSuggestion[] => {
     if (!currentUser) return [];
     
+    // Filter out participants we already have requests with
     const otherParticipants = participants.filter(
       p => p.id !== currentUser.id && !existingRequestIds.has(p.id)
     );
@@ -298,6 +288,7 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
       "Every great partnership starts with a simple hello! 👋",
     ];
 
+    // Shuffle and pick up to 3 random participants
     const shuffled = [...otherParticipants].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(3, shuffled.length));
 
@@ -316,30 +307,22 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
 
   const createMeetingFromSuggestion = async (suggestion: MatchSuggestion) => {
     try {
-      const requesterId = currentUser?.id || suggestion.participant1.id;
-      const targetId = currentUser 
-        ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2.id : suggestion.participant1.id)
-        : suggestion.participant2.id;
-
       const { error } = await supabase.from("meeting_requests").insert({
         event_id: eventId,
-        requester_id: requesterId,
-        target_id: targetId,
+        requester_id: suggestion.participant1.id,
+        target_id: suggestion.participant2.id,
         message: suggestion.reason,
         is_ai_suggested: true,
       });
 
       if (error) throw error;
 
-      const targetName = currentUser
-        ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2.name : suggestion.participant1.name)
-        : suggestion.participant2.name;
-
       toast({
-        title: "Meeting request sent!",
-        description: `Sent to ${targetName}`,
+        title: "Meeting request created!",
+        description: `Sent to ${suggestion.participant1.name} and ${suggestion.participant2.name}`,
       });
 
+      // Remove from suggestions and update storage
       const newSuggestions = suggestions.filter((s) => s !== suggestion);
       setSuggestions(newSuggestions);
       if (newSuggestions.length === 0) {
@@ -355,225 +338,217 @@ export function AIMatchingPanel({ eventId, participants, currentUser, isOrganize
 
   const RoleIcon1 = (role: string) => ROLE_ICONS[role as keyof typeof ROLE_ICONS] || Code;
 
-  const filteredSuggestions = suggestions.filter(s => {
-    // Participant-only: must involve currentUser
-    if (currentUser && !isOrganizer) {
-      const involvesUser = s.participant1.id === currentUser.id || s.participant2.id === currentUser.id;
-      if (!involvesUser) return false;
-    }
-    // Exclude already-contacted
-    if (currentUser) {
-      const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
-      return !existingRequestIds.has(otherPersonId);
-    }
-    return true;
-  });
-
-  // Deduplicate: keep only highest-scored match per other participant
-  const deduplicatedSuggestions = (() => {
-    if (!currentUser || isOrganizer) return filteredSuggestions;
-    const bestByOther = new Map<string, MatchSuggestion>();
-    for (const s of filteredSuggestions) {
-      const otherId = s.participant1.id === currentUser.id
-        ? s.participant2.id
-        : s.participant1.id;
-      const existing = bestByOther.get(otherId);
-      if (!existing || s.compatibility_score > existing.compatibility_score) {
-        bestByOther.set(otherId, s);
-      }
-    }
-    return Array.from(bestByOther.values()).sort(
-      (a, b) => b.compatibility_score - a.compatibility_score
-    );
-  })();
-
   return (
-    <div className="space-y-12">
-      {/* Personalized Greeting - minimal */}
+    <div className="space-y-6">
+      {/* Personalized Greeting */}
       {currentUser && (
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-serif text-xl font-medium text-foreground">
-              Welcome, {currentUser.name}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Let's find you some great connections
-            </p>
-          </div>
-        </div>
+        <Card className="bg-card border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-medium text-foreground">
+                  Welcome, {currentUser.name}! 👋
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Let's find you some great connections based on your interests
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Generate Button - as text link CTA */}
-      <div className="text-center py-8">
-        <OverlappingCirclesIcon className="text-charcoal mx-auto mb-6" size={48} />
-        <h2 className="font-serif text-2xl font-medium text-foreground mb-2">
-          AI-Powered Matching
-        </h2>
-        <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
-          {isOrganizer
-            ? `Let AI analyze participant profiles and suggest optimal networking pairs`
-            : currentUser 
+      {/* Generate Button */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="font-serif text-foreground flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            AI-Powered Matching
+          </CardTitle>
+          <CardDescription>
+            {currentUser 
               ? `Finding the best people for you to meet at this event`
               : `Let AI analyze participant profiles and suggest optimal networking pairs`
-          }
-        </p>
-        
-        {/* Text link CTA instead of button */}
-        <button
-          onClick={generateMatches}
-          disabled={isLoading || participants.length < 2}
-          className="text-link-cta group disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <>
-              <RefreshCw className="w-5 h-5 animate-spin" />
-              Finding your matches...
-            </>
-          ) : hasGenerated ? (
-            <>
-              <RefreshCw className="w-5 h-5" />
-              Find More Matches
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </>
-          ) : (
-            <>
-              <SparkleIcon className="text-primary" size={20} />
-              {isOrganizer ? "Generate AI Matches" : currentUser ? "Find My Matches" : "Generate AI Matches"}
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </>
-          )}
-        </button>
-        
-        <p className="text-xs text-muted-foreground mt-4">
-          {currentUser 
-            ? `${participants.filter(p => p.id !== currentUser.id && !existingRequestIds.has(p.id)).length} people available`
-            : `${participants.length} participants`
-          }
-        </p>
-      </div>
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={generateMatches}
+            disabled={isLoading || participants.length < 2}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground glow-gold"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Finding your matches...
+              </>
+            ) : hasGenerated ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Find More Matches
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 mr-2" />
+                {currentUser ? "Find My Matches" : "Generate AI Matches"}
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            {currentUser 
+              ? `${participants.filter(p => p.id !== currentUser.id && !existingRequestIds.has(p.id)).length} people available to connect with`
+              : `${participants.length} participants available for matching`
+            }
+          </p>
+        </CardContent>
+      </Card>
 
-      {/* Suggestions - left-aligned list */}
-      {deduplicatedSuggestions.length > 0 && (
-        <div className="space-y-8">
-          <div className="flex items-center gap-3 justify-start">
-            <MediumSparkle className="text-primary" size={28} />
-            <h3 className="font-serif text-xl font-medium text-foreground">
-              {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
-            </h3>
-          </div>
-          
-          <div className="space-y-7">
-            {deduplicatedSuggestions.map((suggestion, index) => {
-              const Icon1 = RoleIcon1(suggestion.participant1.role);
-              const Icon2 = RoleIcon1(suggestion.participant2.role);
-              const isYourMatch = currentUser && 
-                (suggestion.participant1.id === currentUser.id || suggestion.participant2.id === currentUser.id);
-              const otherPerson = currentUser 
-                ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
-                : null;
+      {/* Suggestions - filter out already requested */}
+      {suggestions.filter(s => {
+        if (!currentUser) return true;
+        const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+        return !existingRequestIds.has(otherPersonId);
+      }).length > 0 && (
+        <div className="space-y-4">
+        <h3 className="font-serif text-lg font-medium text-foreground">
+          {currentUser ? "Your Recommended Connections" : "Suggested Matches"}
+        </h3>
+        {suggestions.filter(s => {
+          if (!currentUser) return true;
+            const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+            return !existingRequestIds.has(otherPersonId);
+          }).map((suggestion, index) => {
+            const Icon1 = RoleIcon1(suggestion.participant1.role);
+            const Icon2 = RoleIcon1(suggestion.participant2.role);
+            const isYourMatch = currentUser && 
+              (suggestion.participant1.id === currentUser.id || suggestion.participant2.id === currentUser.id);
+            const otherPerson = currentUser 
+              ? (suggestion.participant1.id === currentUser.id ? suggestion.participant2 : suggestion.participant1)
+              : null;
 
-              // Safety net: never render third-party matches for participants
-              if (!isOrganizer && currentUser && !isYourMatch) return null;
-
-              return (
-                <div key={index} className="py-1">
+            return (
+              <Card key={index} className={`bg-card border-border hover:border-primary/50 transition-colors ${isYourMatch ? 'ring-1 ring-primary/30' : ''}`}>
+                <CardContent className="pt-6">
                   {isYourMatch && otherPerson ? (
-                    <div className="flex flex-col md:flex-row md:items-start gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <TitleSparkle className="text-primary flex-shrink-0" size={18} />
+                    // Personalized view for current user
+                    <div className="mb-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                           <Icon2 className="w-5 h-5 text-primary" />
-                          <span className="font-serif text-lg font-medium text-foreground">
-                            {otherPerson.name}
-                          </span>
-                          <span className="text-xs font-medium text-primary">
+                        </div>
+                        <div>
+                          <span className="font-sans font-semibold text-foreground text-lg">{otherPerson.name}</span>
+                          <Badge className="bg-success/10 text-success border border-success/20 text-xs ml-2">
                             {Math.round(suggestion.compatibility_score * 100)}% match
-                          </span>
+                          </Badge>
                         </div>
-                        
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {otherPerson.superpower && (
-                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                              {SUPERPOWER_LABELS[otherPerson.superpower] || otherPerson.superpower}
-                            </Badge>
-                          )}
-                          {otherPerson.vibe && (
-                            <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-                              {VIBE_LABELS[otherPerson.vibe] || otherPerson.vibe}
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground font-serif italic">
-                          "{suggestion.reason}"
-                        </p>
                       </div>
-                      
-                      <button
-                        onClick={() => createMeetingFromSuggestion(suggestion)}
-                        className="text-link-cta group whitespace-nowrap"
-                      >
-                        Request to Meet
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </button>
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {otherPerson.superpower && (
+                          <Badge className="text-xs bg-primary/10 text-primary border border-primary/20">
+                            {SUPERPOWER_LABELS[otherPerson.superpower] || otherPerson.superpower}
+                          </Badge>
+                        )}
+                        {otherPerson.vibe && (
+                          <Badge className="text-xs bg-secondary text-muted-foreground border border-border">
+                            {VIBE_LABELS[otherPerson.vibe] || otherPerson.vibe}
+                          </Badge>
+                        )}
+                      </div>
+                      {otherPerson.bio && (
+                        <p className="text-sm text-muted-foreground font-serif italic mb-3">"{otherPerson.bio.slice(0, 100)}{otherPerson.bio.length > 100 ? '...' : ''}"</p>
+                      )}
                     </div>
                   ) : (
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                    // Standard view for non-personalized matches
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center gap-2">
                           <Icon1 className="w-4 h-4 text-primary" />
                           <span className="font-medium text-foreground">{suggestion.participant1.name}</span>
-                          <span className="text-muted-foreground">×</span>
+                          <Badge variant="outline" className="text-xs">
+                            {SUPERPOWER_LABELS[suggestion.participant1.superpower || ''] || suggestion.participant1.role}
+                          </Badge>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2">
                           <Icon2 className="w-4 h-4 text-primary" />
                           <span className="font-medium text-foreground">{suggestion.participant2.name}</span>
-                          <span className="text-xs font-medium text-primary ml-2">
-                            {Math.round(suggestion.compatibility_score * 100)}%
-                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {SUPERPOWER_LABELS[suggestion.participant2.superpower || ''] || suggestion.participant2.role}
+                          </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground font-serif italic">
-                          "{suggestion.reason}"
-                        </p>
                       </div>
-                      
-                      <button
-                        onClick={() => createMeetingFromSuggestion(suggestion)}
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
-                      >
-                        Create Meeting
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
+                      <Badge className="bg-success/10 text-success border border-success/20">
+                        {Math.round(suggestion.compatibility_score * 100)}% match
+                      </Badge>
                     </div>
                   )}
-                </div>
-              );
-            })}
-          </div>
+
+                  <p className="text-sm text-muted-foreground mb-4 bg-secondary p-3 rounded border border-border">
+                    <Sparkles className="w-4 h-4 inline mr-2 text-primary" />
+                    {suggestion.reason}
+                  </p>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-border hover:border-primary"
+                      onClick={() => {
+                        const newSuggestions = suggestions.filter((s) => s !== suggestion);
+                        setSuggestions(newSuggestions);
+                        if (newSuggestions.length === 0) {
+                          localStorage.removeItem(storageKey);
+                        }
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={() => createMeetingFromSuggestion(suggestion)}
+                    >
+                      {isYourMatch ? "Request to Meet" : "Create Meeting Request"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* No suggestions state */}
-      {hasGenerated && deduplicatedSuggestions.length === 0 && (
-        <div className="text-center py-12">
-          <SparkleIcon className="text-charcoal mx-auto mb-4" size={48} />
-          <p className="font-serif text-lg text-foreground mb-2">
-            You've reached out to everyone!
-          </p>
-          <p className="text-sm text-muted-foreground mb-6">
-            Check back if new participants join
-          </p>
-          <button
-            onClick={generateMatches}
-            disabled={isLoading}
-            className="text-link-cta group mx-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Find More Matches
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </button>
-        </div>
+      {hasGenerated && suggestions.filter(s => {
+        if (!currentUser) return true;
+        const otherPersonId = s.participant1.id === currentUser.id ? s.participant2.id : s.participant1.id;
+        return !existingRequestIds.has(otherPersonId);
+      }).length === 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <Sparkles className="w-8 h-8 text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">
+              {participants.filter(p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)).length === 0
+                ? "You've connected with everyone! 🎉"
+                : "All suggestions have been used or dismissed"
+              }
+            </p>
+            {participants.filter(p => p.id !== currentUser?.id && !existingRequestIds.has(p.id)).length > 0 && (
+              <Button
+                variant="link"
+                onClick={generateMatches}
+                className="text-primary mt-2"
+              >
+                Generate new matches
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

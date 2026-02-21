@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -10,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Code, Palette, Briefcase, ExternalLink, Check, Clock, ArrowRight } from "lucide-react";
+import { Code, Palette, Briefcase, MessageSquare, ExternalLink, Check, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,7 +38,6 @@ interface ParticipantCardProps {
   isSelected?: boolean;
   currentUserId?: string;
   compact?: boolean;
-  isOrganizer?: boolean;
 }
 
 export function ParticipantCard({
@@ -46,7 +47,6 @@ export function ParticipantCard({
   isSelected,
   currentUserId,
   compact = false,
-  isOrganizer = false,
 }: ParticipantCardProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [message, setMessage] = useState("");
@@ -76,6 +76,7 @@ export function ParticipantCard({
     
     checkExistingRequest();
     
+    // Subscribe to changes
     const channel = supabase
       .channel(`request-status-${participant.id}-${currentUserId}`)
       .on(
@@ -132,63 +133,69 @@ export function ParticipantCard({
     }
   };
 
-  const isMe = currentUserId === participant.id;
-
   if (compact) {
+    const isMe = currentUserId === participant.id;
+    
     return (
-      <div className="py-4 border-b border-border/30 last:border-b-0">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <RoleIcon className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="font-medium text-foreground text-sm">
-                {participant.name}
-                {isMe && <span className="text-xs text-muted-foreground ml-1">(You)</span>}
-              </span>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/30 text-primary">
-                {participant.role}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {participant.interests.slice(0, 3).map((interest, index) => (
-                <span
-                  key={`${interest}-${index}`}
-                  className="text-[10px] text-muted-foreground"
-                >
-                  {interest}{index < Math.min(2, participant.interests.length - 1) && " · "}
-                </span>
-              ))}
-              {participant.interests.length > 3 && (
-                <span className="text-[10px] text-muted-foreground">+{participant.interests.length - 3}</span>
-              )}
-            </div>
+      <Card className="bg-card border-border hover:border-primary/50 transition-colors">
+        <CardHeader className="pb-2 pt-3 px-3">
+          <div className="flex items-center gap-2">
+            <RoleIcon className="w-4 h-4 text-primary flex-shrink-0" />
+            <CardTitle className="text-foreground text-sm font-medium truncate">
+              {participant.name}
+              {isMe && <span className="text-xs text-muted-foreground ml-1">(You)</span>}
+            </CardTitle>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <button
+        </CardHeader>
+        <CardContent className="px-3 pb-3 pt-0 space-y-2">
+          <Badge className="bg-primary/10 text-primary border border-primary/20 text-xs">
+            {participant.role}
+          </Badge>
+          <div className="flex flex-wrap gap-1">
+            {participant.interests.slice(0, 3).map((interest, index) => (
+              <Badge
+                key={`${interest}-${index}`}
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 border-primary/30 text-primary"
+              >
+                {interest}
+              </Badge>
+            ))}
+            {participant.interests.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{participant.interests.length - 3}</span>
+            )}
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-7 text-xs border-border hover:border-primary"
               onClick={() => window.open(participant.telegram_handle, "_blank")}
-              className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ExternalLink className="w-3 h-3" />
-            </button>
-            {!isOrganizer && !isMe && (
+              <ExternalLink className="w-3 h-3 mr-1" />
+              LinkedIn
+            </Button>
+            {!isMe && (
               requestStatus === "accepted" ? (
-                <span className="text-xs text-success flex items-center gap-1">
-                  <Check className="w-3 h-3" />
+                <Badge className="h-7 px-2 bg-success/10 text-success border border-success/20 text-xs flex items-center">
+                  <Check className="w-3 h-3 mr-1" />
                   Matched
-                </span>
+                </Badge>
               ) : requestStatus === "pending" ? (
-                <span className="text-xs text-primary flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                <Badge className="h-7 px-2 bg-primary/10 text-primary border border-primary/20 text-xs flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
                   Pending
-                </span>
+                </Badge>
               ) : (
                 <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
                   <DialogTrigger asChild>
-                    <button className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      <MessageSquare className="w-3 h-3 mr-1" />
                       Meet
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-card border-border">
                     <DialogHeader>
@@ -212,14 +219,13 @@ export function ParticipantCard({
                             className="bg-input border-border focus:border-primary"
                           />
                         </div>
-                        {/* Text link CTA */}
-                        <button
+                        <Button
                           onClick={handleRequestMeeting}
                           disabled={isSubmitting}
-                          className="w-full text-link-cta justify-center py-4 border-t border-border/50"
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
-                          {isSubmitting ? "Sending..." : "Send Request →"}
-                        </button>
+                          {isSubmitting ? "Sending..." : "Send Request"}
+                        </Button>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">
@@ -231,105 +237,111 @@ export function ParticipantCard({
               )
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div
-      className={`py-4 border-b border-border/30 last:border-b-0 cursor-pointer transition-colors hover:bg-secondary/30 ${
-        isSelected ? "bg-primary/5" : ""
+    <Card
+      className={`bg-card border-border transition-all hover:border-primary/50 ${
+        isSelected ? "border-primary" : ""
       }`}
       onClick={onSelect}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-foreground flex items-center gap-2 text-lg font-sans font-semibold">
             <RoleIcon className="w-5 h-5 text-primary" />
-            <span className="font-serif text-lg font-medium text-foreground">{participant.name}</span>
-            <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-              {participant.role}
+            {participant.name}
+          </CardTitle>
+          <Badge className="bg-primary/10 text-primary border border-primary/20">
+            {participant.role}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-1.5">
+          {participant.interests.map((interest) => (
+            <Badge
+              key={interest}
+              variant="outline"
+              className="text-xs border-primary/30 text-primary"
+            >
+              {interest}
             </Badge>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {participant.interests.map((interest) => (
-              <span
-                key={interest}
-                className="text-xs text-muted-foreground"
-              >
-                {interest}
-              </span>
-            ))}
-          </div>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className={currentUserId === participant.id ? "flex-1" : "flex-1 border-border hover:border-primary"}
             onClick={(e) => {
               e.stopPropagation();
               window.open(participant.telegram_handle, "_blank");
             }}
-            className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ExternalLink className="w-4 h-4" />
-          </button>
+            <ExternalLink className="w-4 h-4 mr-1" />
+            LinkedIn
+          </Button>
 
-          {!isOrganizer && currentUserId && currentUserId !== participant.id && (
+          {currentUserId && currentUserId !== participant.id && (
             requestStatus === "accepted" ? (
-              <span className="text-xs text-success flex items-center gap-1">
-                <Check className="w-4 h-4" />
+              <Badge className="h-8 px-3 bg-success/10 text-success border border-success/20 flex items-center">
+                <Check className="w-4 h-4 mr-1" />
                 Matched
-              </span>
+              </Badge>
             ) : requestStatus === "pending" ? (
-              <span className="text-xs text-primary flex items-center gap-1">
-                <Clock className="w-4 h-4" />
+              <Badge className="h-8 px-3 bg-primary/10 text-primary border border-primary/20 flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
                 Pending
-              </span>
+              </Badge>
             ) : (
               <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
                 <DialogTrigger asChild>
-                  <button
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    Meet
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    Request Meet
+                  </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
-                  <DialogHeader>
-                    <DialogTitle className="font-serif">Request Meeting with {participant.name}</DialogTitle>
-                    <DialogDescription>
-                      Send a meeting request to connect during the networking session
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="message">Message (optional)</Label>
-                      <Textarea
-                        id="message"
-                        placeholder="Hi! I'd love to chat about..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className="bg-input border-border focus:border-primary"
-                      />
-                    </div>
-                    {/* Text link CTA */}
-                    <button
-                      onClick={handleRequestMeeting}
-                      disabled={isSubmitting}
-                      className="w-full text-link-cta justify-center py-4 border-t border-border/50"
-                    >
-                      {isSubmitting ? "Sending..." : "Send Request →"}
-                    </button>
+              <DialogContent className="bg-card border-border" onClick={(e) => e.stopPropagation()}>
+                <DialogHeader>
+                  <DialogTitle className="font-serif">Request Meeting with {participant.name}</DialogTitle>
+                  <DialogDescription>
+                    Send a meeting request to connect during the networking session
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message (optional)</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Hi! I'd love to chat about..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="bg-input border-border focus:border-primary"
+                    />
                   </div>
-                </DialogContent>
+                  <Button
+                    onClick={handleRequestMeeting}
+                    disabled={isSubmitting}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {isSubmitting ? "Sending..." : "Send Request"}
+                  </Button>
+                </div>
+              </DialogContent>
               </Dialog>
             )
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

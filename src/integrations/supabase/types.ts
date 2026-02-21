@@ -14,56 +14,10 @@ export type Database = {
   }
   public: {
     Tables: {
-      event_questions: {
-        Row: {
-          created_at: string
-          event_id: string
-          field_type: string
-          id: string
-          is_required: boolean
-          options: Json | null
-          placeholder: string | null
-          question_text: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          event_id: string
-          field_type?: string
-          id?: string
-          is_required?: boolean
-          options?: Json | null
-          placeholder?: string | null
-          question_text: string
-          sort_order?: number
-        }
-        Update: {
-          created_at?: string
-          event_id?: string
-          field_type?: string
-          id?: string
-          is_required?: boolean
-          options?: Json | null
-          placeholder?: string | null
-          question_text?: string
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_questions_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       events: {
         Row: {
           created_at: string
-          creator_name: string | null
           description: string | null
-          end_datetime: string | null
           event_date: string | null
           id: string
           location: string | null
@@ -71,14 +25,11 @@ export type Database = {
           networking_duration: number | null
           organizer_code: string
           share_code: string
-          start_datetime: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          creator_name?: string | null
           description?: string | null
-          end_datetime?: string | null
           event_date?: string | null
           id?: string
           location?: string | null
@@ -86,14 +37,11 @@ export type Database = {
           networking_duration?: number | null
           organizer_code?: string
           share_code?: string
-          start_datetime?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          creator_name?: string | null
           description?: string | null
-          end_datetime?: string | null
           event_date?: string | null
           id?: string
           location?: string | null
@@ -101,7 +49,6 @@ export type Database = {
           networking_duration?: number | null
           organizer_code?: string
           share_code?: string
-          start_datetime?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -257,45 +204,6 @@ export type Database = {
           {
             foreignKeyName: "meeting_requests_target_id_fkey"
             columns: ["target_id"]
-            isOneToOne: false
-            referencedRelation: "registrations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      question_responses: {
-        Row: {
-          created_at: string
-          id: string
-          question_id: string
-          registration_id: string
-          response: Json
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          question_id: string
-          registration_id: string
-          response: Json
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          question_id?: string
-          registration_id?: string
-          response?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "question_responses_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "event_questions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "question_responses_registration_id_fkey"
-            columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "registrations"
             referencedColumns: ["id"]
